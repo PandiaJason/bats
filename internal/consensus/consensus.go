@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"sync"
 
-	"bats-cluster/internal/network"
-	"bats-cluster/internal/storage"
-	"bats-cluster/internal/types"
+	"bats/internal/network"
+	"bats/internal/storage"
+	"bats/internal/types"
 )
 
 type Consensus struct {
@@ -16,6 +16,7 @@ type Consensus struct {
 	View    uint64
 	Prepare map[string]map[string]bool
 	Commit  map[string]map[string]bool
+	Weights map[string]int
 
 	F     int
 	ID    string
@@ -24,9 +25,17 @@ type Consensus struct {
 }
 
 func New(id string, peers []string, f int, wal *storage.WAL) *Consensus {
+	weights := make(map[string]int)
+	// Default weights for all nodes (including peers and self)
+	weights[id] = 1
+	for _, p := range peers {
+		weights[p] = 1
+	}
+
 	return &Consensus{
 		Prepare: make(map[string]map[string]bool),
 		Commit:  make(map[string]map[string]bool),
+		Weights: weights,
 		F:       f,
 		ID:      id,
 		Peers:   peers,
@@ -34,9 +43,40 @@ func New(id string, peers []string, f int, wal *storage.WAL) *Consensus {
 	}
 }
 
+func (c *Consensus) GetLeader() string {
+	allNodes := append([]string{c.ID}, c.Peers...)
+	// In a real system, we'd sort these or use a consistent order
+	// For now, let's just use the View to pick a node.
+	// To make it weighted, we'd sum weights and pick based on cumulative weight.
+	
+	totalWeight := 0
+	for _, w := range c.Weights {
+		totalWeight += w
+	}
+	
+	target := int(c.View) % totalWeight
+	current := 0
+	for i := 0; i < len(allNodes); i++ {
+		current += c.Weights[allNodes[i]]
+		if current > target {
+			return allNodes[i]
+		}
+	}
+	return allNodes[0]
+}
+
+func (c *Consensus) IsLeader() bool {
+	return c.GetLeader() == c.ID
+}
+
 func (c *Consensus) Start(digest [32]byte) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
+
+	if !c.IsLeader() {
+		fmt.Printf("⚠️ Node %s is not the leader for View %d. Ignoring Start request.\n", c.ID, c.View)
+		return
+	}
 
 	msg := &types.ConsensusMessage{
 		Type:   types.MessageType_PREPREPARE,

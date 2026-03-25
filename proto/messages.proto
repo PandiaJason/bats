@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package types;
 
-option go_package = "bats-cluster/internal/types";
+option go_package = "bats/internal/types";
 
 enum MessageType {
     PREPREPARE = 0;
