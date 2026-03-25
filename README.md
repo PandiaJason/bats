@@ -1,14 +1,24 @@
 # BATS: Byzantine Agent Trust System
 
-[![Go Version](https://img.shields.io/badge/Go-1.22+-00ADD8?style=flat&logo=go)](https://golang.org/)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Security](https://img.shields.io/badge/Security-mTLS%20&%20Ed25519-blue)](docs/SECURITY.md)
-
-**BATS** is a production-grade, high-performance distributed consensus engine designed for autonomous agent systems. It provides verifiable trust and state-machine replication (SMR) in environments where individual nodes may fail or act maliciously (Byzantine faults).
+**The most resilient way to build trusted agent networks.**
 
 ---
 
-## 🔬 Scientific Overview
+## 🌟 Simple Quick Start
+
+Don't want to read the science? Just run this:
+
+1. **Start the Cluster**: `go run ./cmd/bats/main.go start`
+2. **Watch it Move**: Open [http://localhost:8080](http://localhost:8080)
+3. **Trigger Consensus**: `go run ./cmd/bats/main.go trigger`
+
+That's it. You now have a 4-node Byzantine-resilient cluster running with mTLS and Protobuf.
+
+---
+
+## 📖 What is BATS?
+
+BATS is a system that allows 
 
 BATS implements a modernized version of **Practical Byzantine Fault Tolerance (PBFT)**. It ensures safety (agreement) and liveness in an asynchronous network provided that no more than $f$ nodes are faulty in a cluster of $3f+1$ nodes.
 
