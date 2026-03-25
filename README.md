@@ -6,39 +6,46 @@
 
 ## Abstract
 
-As autonomous agents transition from isolated entities to collaborative networks, the requirement for a resilient, verifiable, and trustless coordination layer becomes paramount. The **Byzantine Agent Trust System (BATS)** addresses this by providing a Practical Byzantine Fault Tolerant (PBFT) consensus engine optimized for high-frequency agentic interactions. BATS integrates industrial-grade security primitives, including mutual TLS (mTLS) and Ed25519 digital signatures, with performance-centric transport layers such as QUIC (HTTP/3). This document outlines the architectural principles, consensus methodology, and technical specifications of the BATS framework.
+As autonomous agents transition from isolated entities to collaborative networks, the requirement for a resilient, verifiable, and trustless coordination layer becomes paramount. The **Byzantine Agent Trust System (BATS)** addresses this by providing a Practical Byzantine Fault Tolerant (PBFT) consensus engine optimized for high-frequency agentic interactions. BATS integrates industrial-grade security primitives with performance-centric transport layers such as QUIC (HTTP/3). This document outlines the architectural principles, consensus methodology, and technical specifications of the BATS framework, specifically addressing the challenges of non-deterministic agreement in the age of Generative AI.
 
 ---
 
 ## 1. Introduction
 
-The orchestration of decentralized autonomous agents necessitates a mechanism to reach consensus on state transitions in the presence of arbitrary (Byzantine) failures. Traditional consensus models often suffer from high latency or excessive resource consumption, making them unsuitable for real-time agentic decision-making. BATS is designed to bridge this gap by offering a lightweight yet mathematically rigorous consensus layer that ensures safety and liveness under the standard $3f+1$ node assumption.
+The orchestration of decentralized autonomous agents necessitates a mechanism to reach consensus on state transitions in the presence of arbitrary (Byzantine) failures. Traditional consensus models often suffer from high latency or excessive resource consumption. BATS is designed to bridge this gap, offering a lightweight yet mathematically rigorous consensus layer that ensures safety and liveness under the standard $3f+1$ node assumption.
 
-## 2. System Architecture
+## 2. BATS in the Era of GenAI & LLM Agents
 
-The BATS architecture is built on a "Zero-Trust" foundation, where node identity and message integrity are verified at every layer of the stack.
+In the contemporary landscape of Large Language Models (LLMs), agents often exhibit non-deterministic behavior. When multiple agents (e.g., GPT-4o, Claude 3.5, Gemini 1.5) are tasked with a single high-stakes decision, a "single source of truth" is insufficient. 
 
-### 2.1 Networking & Security
-- **mTLS Enforcement**: Every node in the cluster operates as both a client and a server, with mutual authentication enforced using a private cluster Root CA.
-- **Protobuf Serialization**: Data structures are encoded using Protocol Buffers (v3) to minimize payload overhead and maximize parsing efficiency.
-- **Transport Protocols**: BATS supports both HTTPS/2 (TCP) and QUIC (UDP), providing a fallback mechanism for ultra-low latency streaming in lossy network environments.
+BATS provides the **Verifiable Agreement Layer** for these agents. By requiring a $2f+1$ quorum on agentic outputs, BATS ensures that a decision is only committed to the global state if it has been validated by a majority of independent, authenticated nodes. This multi-agent verification treats LLM hallucinations as "Byzantine faults," effectively filtering out erroneous or malicious AI outputs.
 
-### 2.2 Storage & Persistence
-Durability is managed via a thread-safe **Write-Ahead Log (WAL)**. To prevent disk exhaustion in long-running clusters, BATS implements **Automated State Pruning & Checkpointing**, rotating logs after a calibrated number of state transitions.
+## 3. Who Needs BATS Today?
 
-## 3. Consensus Methodology
+- **Autonomous DeFi Protocols**: When AI agents manage liquidity or execute high-frequency trades, BATS prevents single-point failure by requiring consensus on every transaction.
+- **Decentralized Multi-Agent Research**: Researchers using clusters of LLMs to solve complex problems use BATS to synchronize state and verify intermediate results.
+- **Supply Chain Orchestration**: Autonomous agents managing logistics and contracts require BATS to ensure all parties agree on the state of physical goods and payments.
+- **Secure AI Governance**: Organizations deploying "Council of Agents" for decision-making rely on BATS for immutable, audited voting records.
 
-BATS utilizes a refined 3-phase commit protocol to achieve Byzantine resilience.
+## 4. System Architecture
 
-### 3.1 The 3-Phase Lifecycle
-1.  **Pre-prepare (Propose)**: The elected Primary (Leader) broadcasts a sequence number and the transaction digest to all Followers.
-2.  **Prepare (Vote)**: Followers verify the proposal and broadcast a Prepare message. This phase ensures that nodes agree on the sequence in the current view.
-3.  **Commit (Finalize)**: Once a node receives $2f$ matching Prepare messages from distinct peers, it broadcasts a Commit message. The transaction is finalized upon receiving $2f+1$ Commit messages.
+BATS architecture is built on a "Zero-Trust" foundation, where node identity and message integrity are verified at every layer.
 
-### 3.2 Weighted Leader Election
-Unlike simple round-robin election models, BATS supports **Dynamic Weighted Leader Election**. Nodes can be assigned different weights based on reputation or stake, influencing the frequency of their selection as Primary.
+### 4.1 Networking & Security
+- **mTLS Enforcement**: Mutual authentication enforced using a private cluster Root CA.
+- **Protobuf Serialization**: High-efficiency binary encoding.
+- **Transport Protocols**: Support for both HTTPS/2 (TCP) and QUIC (UDP).
 
-## 4. Technical Specification
+### 4.2 Storage & Persistence
+Durability is managed via a thread-safe **Write-Ahead Log (WAL)** with **Automated State Pruning & Checkpointing**.
+
+## 5. Consensus Methodology
+
+BATS utilizes a refined 3-phase commit protocol: **Pre-prepare**, **Prepare**, and **Commit**. 
+
+---
+
+## 6. Technical Specification
 
 | Component | Technology |
 | :--- | :--- |
@@ -50,30 +57,17 @@ Unlike simple round-robin election models, BATS supports **Dynamic Weighted Lead
 
 ---
 
-## 5. Evaluation & Tooling
+## 7. Authorship & Organization
 
-BATS includes a comprehensive suite of tools for cluster management and monitoring.
-
-- **Unified CLI (`bats`)**: A single binary for cluster orchestration (start/stop/audit).
-- **Interactive Dashboard**: A real-time telemetry interface (localhost:8080) providing visibility into node health and quorum status.
-- **Verification Engine**: An AI-Agent tool that evaluates internet-sourced LLM decisions against the cluster's consensus rules.
+**Lead Author**: Xs10s  
+**Organization**: Xs10s Research  
 
 ---
 
-## 6. Project Roadmap
-
-- [x] **Phase I**: Core mTLS & Protobuf Foundation
-- [x] **Phase II**: 3-Phase Consensus & WAL Implementation
-- [x] **Phase III**: Real-time Telemetry & Management Dashboard
-- [x] **Phase IV**: Advanced QUIC Transport & Weighted Election
-- [x] **Phase V**: Automated State Pruning & Checkpointing
-
----
-
-## 7. License
+## 8. License
 
 This project is licensed under the **MIT License**. See the `LICENSE` file for full legal details.
 
 ---
 
-*© 2026 BATS Research Group. All rights reserved.*
+*© 2026 Xs10s. All rights reserved.*
