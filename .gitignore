@@ -1,0 +1,24 @@
+# Binary files
+node
+dashboard
+bats
+audit
+
+# Logs
+*.log
+node1.log
+node2.log
+node3.log
+node4.log
+wal_*.log
+
+# Certs (ignore for security, user should generate them)
+# But since this is a FOSS repo and I included gen_certs.sh, I'll ignore the certs dir
+certs/
+
+# Go
+vendor/
+.bin/
+
+# OS files
+.DS_Store

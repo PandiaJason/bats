@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+package types;
+
+option go_package = "bats-cluster/internal/types";
+
+enum MessageType {
+    PREPREPARE = 0;
+    PREPARE = 1;
+    COMMIT = 2;
+}
+
+message ConsensusMessage {
+    MessageType type = 1;
+    uint64 view = 2;
+    uint64 sequence = 3;
+    bytes digest = 4;
+    string node_id = 5;
+}
+
+message Header {
+    uint32 version = 1;
+    uint64 sequence = 2;
+    bytes sender_id = 3;
+    bytes intent_hash = 4;
+}
+
+message Envelope {
+    Header header = 1;
+    bytes payload = 2;
+    bytes signature = 3;
+}
