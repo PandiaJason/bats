@@ -1,0 +1,55 @@
+services:
+  node1:
+    build: .
+    ports:
+      - "8001:8001"
+    command: ["node1", "8001"]
+    environment:
+      - PEERS=node1:8001,node2:8002,node3:8003,node4:8004
+    networks:
+      - bats-net
+
+  node2:
+    build: .
+    ports:
+      - "8002:8002"
+    command: ["node2", "8002"]
+    environment:
+      - PEERS=node1:8001,node2:8002,node3:8003,node4:8004
+    networks:
+      - bats-net
+
+  node3:
+    build: .
+    ports:
+      - "8003:8003"
+    command: ["node3", "8003"]
+    environment:
+      - PEERS=node1:8001,node2:8002,node3:8003,node4:8004
+    networks:
+      - bats-net
+
+  node4:
+    build: .
+    ports:
+      - "8004:8004"
+    command: ["node4", "8004"]
+    environment:
+      - PEERS=node1:8001,node2:8002,node3:8003,node4:8004
+    networks:
+      - bats-net
+
+  dashboard:
+    build: .
+    ports:
+      - "8080:8080"
+    command: ["dashboard"]
+    entrypoint: ["/dashboard"]
+    environment:
+      - PEERS=node1:8001,node2:8002,node3:8003,node4:8004
+    networks:
+      - bats-net
+
+networks:
+  bats-net:
+    driver: bridge
