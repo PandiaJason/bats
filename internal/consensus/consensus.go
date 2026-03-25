@@ -69,7 +69,7 @@ func (c *Consensus) IsLeader() bool {
 	return c.GetLeader() == c.ID
 }
 
-func (c *Consensus) Start(digest [32]byte) {
+func (c *Consensus) Start(digest [64]byte) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 

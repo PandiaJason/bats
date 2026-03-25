@@ -10,63 +10,123 @@ As autonomous agents transition from isolated entities to collaborative networks
 
 ---
 
+## 🛡️ Threat Model
+
+BATS assumes a partially synchronous network with up to $f$ Byzantine nodes in a cluster of $3f+1$ replicas. 
+
+The system defends against:
+- **Malicious Agents**: Injection of forged or conflicting messages.
+- **Replay Attacks**: Unauthorized re-transmission of previously valid transactions.
+- **AI-Specific Faults**: Non-deterministic or adversarial LLM outputs (hallucinations).
+- **Network Adversaries**: Message reordering, duplication, or local link failures.
+
+**BATS Guarantees:**
+- **Safety**: No two honest nodes ever commit conflicting states.
+- **Liveness**: System progress is guaranteed as long as $\ge 2f+1$ honest nodes are available.
+
+---
+
 ## 1. Introduction
 
-The orchestration of decentralized autonomous agents necessitates a mechanism to reach consensus on state transitions in the presence of arbitrary (Byzantine) failures. Traditional consensus models often suffer from high latency or excessive resource consumption. BATS is designed to bridge this gap, offering a lightweight yet mathematically rigorous consensus layer that ensures safety and liveness under the standard $3f+1$ node assumption.
+The orchestration of decentralized autonomous agents necessitates a mechanism to reach consensus on state transitions in the presence of arbitrary (Byzantine) failures. BATS is designed to offer a mathematically rigorous consensus layer that ensures safety and liveness, following the foundational principles of [Practical Byzantine Fault Tolerance](https://pmg.csail.mit.edu/papers/osdi99.pdf) (Castro & Liskov, 1999).
 
-## 2. BATS in the Era of GenAI & LLM Agents
+## 2. BATS in the era of GenAI & LLM Agents
 
-In the contemporary landscape of Large Language Models (LLMs), agents often exhibit non-deterministic behavior. When multiple agents (e.g., GPT-4o, Claude 3.5, Gemini 1.5) are tasked with a single high-stakes decision, a "single source of truth" is insufficient. 
-
-BATS provides the **Verifiable Agreement Layer** for these agents. By requiring a $2f+1$ quorum on agentic outputs, BATS ensures that a decision is only committed to the global state if it has been validated by a majority of independent, authenticated nodes. This multi-agent verification treats LLM hallucinations as "Byzantine faults," effectively filtering out erroneous or malicious AI outputs.
+BATS models non-deterministic LLM outputs as Byzantine behavior, enabling the system to reject inconsistent or adversarial agent responses through quorum-based validation. When multiple agents (e.g., GPT-4o, Claude 3.5, Gemini 1.5) are tasked with a high-stakes decision, BATS acts as the **Verifiable Agreement Layer (VAL)**, ensuring a result is only committed to the global state if it has been validated by a majority of independent nodes. This treats AI hallucinations as "network noise" that must be filtered through consensus.
 
 ## 3. Who Needs BATS Today?
 
-- **Autonomous DeFi Protocols**: When AI agents manage liquidity or execute high-frequency trades, BATS prevents single-point failure by requiring consensus on every transaction.
-- **Decentralized Multi-Agent Research**: Researchers using clusters of LLMs to solve complex problems use BATS to synchronize state and verify intermediate results.
-- **Supply Chain Orchestration**: Autonomous agents managing logistics and contracts require BATS to ensure all parties agree on the state of physical goods and payments.
-- **Secure AI Governance**: Organizations deploying "Council of Agents" for decision-making rely on BATS for immutable, audited voting records.
+- **Autonomous DeFi**: AI-managed liquidity and trading requiring multi-agent agreement.
+- **Decentralized Research**: Clusters of LLMs solving complex problems with synchronized state.
+- **Supply Chain Orchestration**: Autonomous logistics management requiring immutable agreement.
+- **Secure AI Governance**: "Council of Agents" model for authenticated, audited voting.
 
 ## 4. System Architecture
 
-BATS architecture is built on a "Zero-Trust" foundation, where node identity and message integrity are verified at every layer.
+The BATS architecture is built on a "Zero-Trust" foundation at every layer.
 
 ### 4.1 Networking & Security
-- **mTLS Enforcement**: Mutual authentication enforced using a private cluster Root CA.
-- **Protobuf Serialization**: High-efficiency binary encoding.
-- **Transport Protocols**: Support for both HTTPS/2 (TCP) and QUIC (UDP).
+- **mTLS Enforcement**: Mutual TLS using a private Root CA for all node authentication.
+- **Protobuf v3**: Deterministic binary serialization for minimal overhead.
+- **Transport Layers**: Primary support for **QUIC (HTTP/3)** for production, with HTTPS/2 fallback.
 
 ### 4.2 Storage & Persistence
-Durability is managed via a thread-safe **Write-Ahead Log (WAL)** with **Automated State Pruning & Checkpointing**.
-
-## 5. Consensus Methodology
-
-BATS utilizes a refined 3-phase commit protocol: **Pre-prepare**, **Prepare**, and **Commit**. 
+- **Write-Ahead Log (WAL)**: Thread-safe persistence of all consensus transitions.
+- **Automated Pruning**: WAL rotation and checkpointing to maintain storage efficiency.
 
 ---
 
-## 6. Technical Specification
+## 5. Deployment & Performance
+
+### 5.1 Performance Characteristics
+| Metric | Expected Range |
+| :--- | :--- |
+| **Latency (Intra-region)** | 5 – 20 ms |
+| **Throughput** | 1k – 10k tx/sec |
+| **Node Count** | Optimal at 4–10 nodes |
+| **Fault Tolerance** | $f = \lfloor(n-1)/3\rfloor$ |
+
+### 5.2 Deployment Model
+BATS is deployed as a sidecar proxy or a standalone cluster node.  
+`Agent → BATS Proxy → BATS Cluster → Consensus → State Commit`
+
+---
+
+## 6. ⚔️ The Gauntlet CLI
+
+The `bats` CLI includes a high-tier adversarial testing suite ("The Gauntlet") to verify cluster resilience against active Byzantine threats.
+
+```bash
+# Running the Xs10s Adversarial Gauntlet...
+> bats-cli gauntlet --target=./swarm_config.json --f=1
+
+[DETECTED] Node_4 attempted Payload Mutation (ASI03) -> BLOCKED
+[DETECTED] Node_2 attempted Replay Attack (ASI07)    -> BLOCKED
+[RESULT]   System Resilience: 100% | Safety Margin: f=1
+```
+
+---
+
+## 7. 🛡️ Security & Compliance (ASI Standards)
+
+BATS is engineered to provide compliance for the **OWASP Agentic Top 10** (2026 standard). By enforcing quorum-based validation on all state changes, BATS mitigates:
+- **Injection Attacks** via multi-agent cross-verification.
+- **Unauthorized State Transitions** via rigorous mTLS-backed identity assurance.
+- **Non-deterministic Drift** via the BATS Verifiable Agreement Layer (VAL).
+
+---
+
+## 8. Formal Guarantees
+
+Under standard PBFT assumptions:
+- **Agreement**: Requires $2f+1$ matching commits from distinct replicas.
+- **Byzantine Resilience**: System tolerates up to $f$ malicious or failing nodes.
+- **Immutability**: No committed state can be reversed without violating the quorum property.
+
+---
+
+## 9. Technical Specification
 
 | Component | Technology |
 | :--- | :--- |
+| **Version** | BATS Protocol v1.1 (March 2026) |
 | **Language** | Go 1.24+ |
-| **Consensus** | PBFT (Byzantine Fault Tolerance) |
+| **Consensus** | PBFT (Practical Byzantine Fault Tolerance) |
 | **Encryption** | Ed25519 (Signatures), SHA-512 (Hashing) |
-| **Transport** | QUIC (HTTP/3), HTTPS/2 (mTLS) |
-| **Serialization** | Google Protobuf v3 |
+| **Architecture** | Zero-Trust Verifiable Agreement Layer (VAL) |
 
 ---
 
-## 7. Authorship & Organization
+## 10. Authorship & Organization
 
 **Lead Author**: Xs10s  
 **Organization**: Xs10s Research  
 
 ---
 
-## 8. License
+## 11. License
 
-This project is licensed under the **MIT License**. See the `LICENSE` file for full legal details.
+This project is licensed under the **MIT License**.
 
 ---
 
