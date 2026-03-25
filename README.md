@@ -78,12 +78,12 @@ BATS operates on a Leader-Follower model using a 3-phase commit protocol:
 
 ## Roadmap
 
-- [x] **mTLS & Protobuf Core**
-- [x] **Interactive Dashboard**
-- [x] **Internet AI Integration**
-- [ ] **Leader Election**: Dynamic weightage-based election.
-- [ ] **QUIC Transport Support**: Move from HTTPS to QUIC.
-- [ ] **State Pruning**: Automated WAL checkpointing and snapshotting.
+- [x] mTLS & Protobuf Core
+- [x] Interactive Dashboard
+- [x] Internet AI Integration
+- [x] Dynamic Weighted Leader Election
+- [x] QUIC Transport Support (HTTP/3)
+- [x] WAL State Pruning & Checkpointing
 
 ---
 
