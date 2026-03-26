@@ -1,12 +1,12 @@
 # BATS — by Xs10s 🦇🔬
-### The AI Safety Layer for Autonomous Systems (v1.5 Beta)
+### The AI Safety Layer for Autonomous Systems (v1.7 Beta)
 
 **BATS** (Byzantine Agent Trust System) is a zero-trust safety layer for AI-driven automation workflows. Developed by **Xs10s**, it ensures that AI-proposed actions are only executed if they pass a Byzantine-resilient cluster consensus.
 
 > [!IMPORTANT]
-> **Positioning**: BATS is NOT a model provider. BATS is the **Integrity Layer** that vets model outputs before they touch real-world infrastructure.
+> **Positioning**: BATS is NOT a model provider. BATS is the **Integrity Layer** that vets model outputs (GPT-4, Claude, Gemini) before they touch real-world infrastructure.
 
-### [🚀 Explore BATS Landing Page](https://PandiaJason.github.io/bats/)
+### [🚀 Explore Live Landing Page](https://PandiaJason.github.io/bats/)
 
 [![Go Version](https://img.shields.io/badge/Go-1.24+-00ADD8?style=flat&logo=go)](https://golang.org/)
 [![Status](https://img.shields.io/badge/Status-Advanced%20Prototype-orange)](https://github.com/PandiaJason/bats)
@@ -50,25 +50,18 @@ BATS models non-deterministic LLM outputs as Byzantine behavior, enabling the sy
 - **Supply Chain Orchestration**: Autonomous logistics management requiring immutable agreement.
 - **Secure AI Governance**: "Council of Agents" model for authenticated, audited voting.
 
-### 3.1 The "Council of Agents" Model (Level-Up)
-BATS supports a diversified consensus model where different nodes utilize different LLM backends (e.g., Node 1: GPT-4, Node 2: Claude 3.5, Node 3: Gemini 1.5). This creates a "Council of Agents" where a decision is only committed if it passes a Byzantine-resilient cross-model agreement. This protects against model-specific biases or single-provider outages.
+### 3.1 The "Council of Agents" Model
+BATS supports a diversified consensus model where different nodes utilize different LLM backends (e.g., Node 1: GPT-4, Node 2: Claude 3.5, Node 3: Gemini 1.5). This creates a "Council of Agents" where a decision is only committed if it passes a Byzantine-resilient cross-model agreement, protecting against model-specific hallucinations.
 
-### 3.2 n8n Integration (BATS Safety Gate)
-BATS can be integrated into **n8n** workflows as a "Safety Gate" HTTP node. This ensures that AI-suggested actions are only executed if they pass the cluster's consensus.
-- **Node Type**: HTTP Request
-- **Endpoint**: `POST /validate`
-- **Payload**: `{"action": "{{$node[\"AI\"].json[\"content\"]}}"}`
+### 3.2 Native n8n Integration
+BATS provides a dedicated **n8n Native Node** for zero-trust workflows.
+- **Node**: `integrations/n8n-node/`
+- **Feature**: Blocks AI-suggested actions in n8n unless the BATS cluster reaches a Byzantine quorum.
 
-### 3.3 OpenClaw Integration
-For agent frameworks like **OpenClaw**, BATS acts as the final verification layer before action execution.
-```python
-# OpenClaw Integration Snippet
-def bats_vetted_execution(action):
-    resp = requests.post("https://bats:8001/validate", json={"action": action})
-    if resp.json().get("approved"):
-        return execute_real_action(action)
-    return "BLOCKED BY BATS"
-```
+### 3.3 OpenClaw Safety Wrapper
+For Python-based frameworks like **OpenClaw**, BATS acts as a direct vetting layer.
+- **Wrapper**: `integrations/openclaw-wrapper/bats_vettor.py`
+- **Pattern**: `AI Decision` → `BATS Vetting` → `Secure Execution`.
 
 ## 4. System Architecture
 
