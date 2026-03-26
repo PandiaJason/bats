@@ -96,6 +96,11 @@ func (c *Consensus) Handle(msg *types.ConsensusMessage) {
 		return
 	}
 
+	if len(msg.Digest) != 64 {
+		fmt.Printf("❌ Node %s: Rejected message with invalid digest length (%d bytes)\n", c.ID, len(msg.Digest))
+		return
+	}
+
 	key := hex.EncodeToString(msg.Digest)
 
 	switch msg.Type {
