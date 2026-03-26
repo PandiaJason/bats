@@ -80,7 +80,7 @@ The BATS architecture is built on a "Zero-Trust" foundation at every layer.
 ### 4.3 Design Principles
 - **Zero-Trust by Default**: No assumption of node or agent honesty.
 - **Consensus over Single-Agent Authority**: Strategic decisions require quorum validation.
-- **Deterministic Validation over Heuristic Trust**: Cryptographic proof over "vibe-based" acceptance.
+- **Deterministic Validation over Heuristic Trust**: Cryptographic proof over "heuristic or probabilistic" acceptance.
 - **Cryptographic Identity for All Participants**: Ed25519-backed identities for non-repudiation.
 - **Fail-Safe Execution**: Default state of rejection for non-conforming or inconsistent inputs.
 
@@ -139,7 +139,7 @@ Under standard PBFT assumptions:
 
 | Component | Technology |
 | :--- | :--- |
-| **Version** | BATS Protocol v1.2 (Active Development) |
+| **Version** | BATS Protocol v1.4 Beta (Research Release) |
 | **Language** | Go 1.24+ |
 | **Consensus** | PBFT (Practical Byzantine Fault Tolerance) |
 | **Encryption** | Ed25519 (Signatures), SHA-512 (Hashing) |
