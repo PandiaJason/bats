@@ -44,6 +44,9 @@ BATS models non-deterministic LLM outputs as Byzantine behavior, enabling the sy
 - **Supply Chain Orchestration**: Autonomous logistics management requiring immutable agreement.
 - **Secure AI Governance**: "Council of Agents" model for authenticated, audited voting.
 
+### 3.1 The "Council of Agents" Model (Level-Up)
+BATS supports a diverstified consensus model where different nodes utilize different LLM backends (e.g., Node 1: GPT-4, Node 2: Claude 3.5, Node 3: Gemini 1.5). This creates a "Council of Agents" where a decision is only committed if it passes a Byzantine-resilient cross-model agreement. This protects against model-specific biases or single-provider outages.
+
 ## 4. System Architecture
 
 The BATS architecture is built on a "Zero-Trust" foundation at every layer.
