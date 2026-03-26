@@ -1,11 +1,12 @@
-# BATS: Byzantine Agent Trust System 🦇🔬
-### Early-Stage Research Architecture & Unified Validation Layer (v1.4 Beta)
+# BATS — by Xs10s 🦇🔬
+### The AI Safety Layer for Autonomous Systems (v1.5 Beta)
 
-**BATS** is an experimental Byzantine-Resilient Research Architecture designed to solve the problem of **Agentic Non-Determinism**. By treating LLM "hallucinations" as protocol faults, BATS provides a verifiable agreement layer for the next generation of autonomous agent networks.
+**BATS** (Byzantine Agent Trust System) is a zero-trust safety layer for AI-driven automation workflows. Developed by **Xs10s**, it ensures that AI-proposed actions are only executed if they pass a Byzantine-resilient cluster consensus.
 
-> [!WARNING]
-> **Project Status: Early-Stage Research.**
-> BATS v1.4 is a prototype for researchers and automation engineers. It is **not enterprise-ready**, not audited for production-grade security, and currently suited for controlled environments and high-integrity R&D.
+> [!IMPORTANT]
+> **Positioning**: BATS is NOT a model provider. BATS is the **Integrity Layer** that vets model outputs before they touch real-world infrastructure.
+
+### [🚀 Explore BATS Landing Page](file:///Users/admin/BATS/bats/website/index.html)
 
 [![Go Version](https://img.shields.io/badge/Go-1.24+-00ADD8?style=flat&logo=go)](https://golang.org/)
 [![Status](https://img.shields.io/badge/Status-Advanced%20Prototype-orange)](https://github.com/PandiaJason/bats)
