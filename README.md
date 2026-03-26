@@ -1,5 +1,6 @@
 # BATS — by Xs10s 🦇🔬
-### The AI Safety Layer for Autonomous Systems (v1.7 Beta)
+### BATS prevents unsafe AI actions before they happen.
+**The AI Safety Layer for Autonomous Systems (v1.4 Beta)**
 
 **BATS** (Byzantine Agent Trust System) is a zero-trust safety layer for AI-driven automation workflows. Developed by **Xs10s**, it ensures that AI-proposed actions are only executed if they pass a Byzantine-resilient cluster consensus.
 
@@ -54,7 +55,7 @@ BATS models non-deterministic LLM outputs as Byzantine behavior, enabling the sy
 BATS supports a diversified consensus model where different nodes utilize different LLM backends (e.g., Node 1: GPT-4, Node 2: Claude 3.5, Node 3: Gemini 1.5). This creates a "Council of Agents" where a decision is only committed if it passes a Byzantine-resilient cross-model agreement, protecting against model-specific hallucinations.
 
 ### 3.2 Native n8n Integration
-BATS provides a dedicated **n8n Native Node** for zero-trust workflows.
+BATS provides a dedicated **n8n Native Node** for zero-trust workflows. This allows BATS to act as a **drop-in safety layer** for existing automation workflows without modifying core logic.
 - **Node**: `integrations/n8n-node/`
 - **Feature**: Blocks AI-suggested actions in n8n unless the BATS cluster reaches a Byzantine quorum.
 
