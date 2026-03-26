@@ -45,7 +45,24 @@ BATS models non-deterministic LLM outputs as Byzantine behavior, enabling the sy
 - **Secure AI Governance**: "Council of Agents" model for authenticated, audited voting.
 
 ### 3.1 The "Council of Agents" Model (Level-Up)
-BATS supports a diverstified consensus model where different nodes utilize different LLM backends (e.g., Node 1: GPT-4, Node 2: Claude 3.5, Node 3: Gemini 1.5). This creates a "Council of Agents" where a decision is only committed if it passes a Byzantine-resilient cross-model agreement. This protects against model-specific biases or single-provider outages.
+BATS supports a diversified consensus model where different nodes utilize different LLM backends (e.g., Node 1: GPT-4, Node 2: Claude 3.5, Node 3: Gemini 1.5). This creates a "Council of Agents" where a decision is only committed if it passes a Byzantine-resilient cross-model agreement. This protects against model-specific biases or single-provider outages.
+
+### 3.2 n8n Integration (BATS Safety Gate)
+BATS can be integrated into **n8n** workflows as a "Safety Gate" HTTP node. This ensures that AI-suggested actions are only executed if they pass the cluster's consensus.
+- **Node Type**: HTTP Request
+- **Endpoint**: `POST /validate`
+- **Payload**: `{"action": "{{$node[\"AI\"].json[\"content\"]}}"}`
+
+### 3.3 OpenClaw Integration
+For agent frameworks like **OpenClaw**, BATS acts as the final verification layer before action execution.
+```python
+# OpenClaw Integration Snippet
+def bats_vetted_execution(action):
+    resp = requests.post("https://bats:8001/validate", json={"action": action})
+    if resp.json().get("approved"):
+        return execute_real_action(action)
+    return "BLOCKED BY BATS"
+```
 
 ## 4. System Architecture
 

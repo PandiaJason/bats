@@ -33,9 +33,11 @@ type Consensus struct {
 
 	Network *network.Client
 	timer   *time.Timer
+
+	OnCommit func([64]byte)
 }
 
-func New(id string, peers []string, f int, wal *storage.WAL, priv []byte, pubs map[string][]byte, net *network.Client) *Consensus {
+func New(id string, peers []string, f int, wal *storage.WAL, priv []byte, pubs map[string][]byte, net *network.Client, onCommit func([64]byte)) *Consensus {
 	weights := make(map[string]int)
 	weights[id] = 1
 	for _, p := range peers {
@@ -55,6 +57,7 @@ func New(id string, peers []string, f int, wal *storage.WAL, priv []byte, pubs m
 		PublicKeys:      pubs,
 		Network:         net,
 		timer:           time.NewTimer(5 * time.Second),
+		OnCommit:        onCommit,
 	}
 }
 
@@ -86,10 +89,11 @@ func (c *Consensus) IsLeader() bool {
 
 func (c *Consensus) Start(digest [64]byte) {
 	c.mu.Lock()
-	defer c.mu.Unlock()
+	// defer c.mu.Unlock() // Removed defer
 
 	if !c.IsLeader() {
 		fmt.Printf("⚠️ Node %s is not the leader for View %d. Ignoring Start request.\n", c.ID, c.View)
+		c.mu.Unlock() // Explicit unlock
 		return
 	}
 
@@ -102,6 +106,28 @@ func (c *Consensus) Start(digest [64]byte) {
 
 	// 🔐 Digital Signature for authenticating the PrePrepare message
 	c.sign(msg)
+	c.mu.Unlock() // Unlock before broadcasting/local handle
+	
+	c.Network.Broadcast(c.Peers, msg)
+	
+	// 🏠 Local processing: Leader also "handles" its own PrePrepare
+	c.Handle(msg)
+}
+
+func (c *Consensus) Heartbeat() {
+	c.mu.Lock()
+	if !c.IsLeader() {
+		c.mu.Unlock()
+		return
+	}
+	msg := &types.ConsensusMessage{
+		Type:   types.MessageType_PREPREPARE,
+		View:   c.View,
+		Digest: make([]byte, 64), // Heartbeat signature
+		NodeId: c.ID,
+	}
+	c.sign(msg)
+	c.mu.Unlock()
 	c.Network.Broadcast(c.Peers, msg)
 }
 
@@ -113,7 +139,7 @@ func (c *Consensus) sign(msg *types.ConsensusMessage) {
 
 func (c *Consensus) Handle(msg *types.ConsensusMessage) {
 	c.mu.Lock()
-	defer c.mu.Unlock()
+	// defer c.mu.Unlock() // Removed defer
 
 	// 🛡️ Byzantine Validation: Verify sender identity and signature
 	if pub, ok := c.PublicKeys[msg.NodeId]; ok {
@@ -125,15 +151,18 @@ func (c *Consensus) Handle(msg *types.ConsensusMessage) {
 
 		if !crypto.Verify(pub, data, sig) {
 			fmt.Printf("⛔ Node %s: SIGNATURE VERIFICATION FAILED from Node %s. Dropping message.\n", c.ID, msg.NodeId)
+			c.mu.Unlock() // Explicit unlock
 			return
 		}
 	} else {
 		fmt.Printf("⚠️ Node %s: UNKNOWN NODE ID %s. Dropping message.\n", c.ID, msg.NodeId)
+		c.mu.Unlock() // Explicit unlock
 		return
 	}
 
 	// Only process messages for the current view
 	if msg.View < c.View {
+		c.mu.Unlock() // Explicit unlock
 		return
 	}
 
@@ -141,6 +170,7 @@ func (c *Consensus) Handle(msg *types.ConsensusMessage) {
 	if msg.Type == types.MessageType_PREPREPARE || msg.Type == types.MessageType_PREPARE || msg.Type == types.MessageType_COMMIT {
 		if len(msg.Digest) != 64 {
 			fmt.Printf("❌ Node %s: Rejected message with invalid digest length (%d bytes)\n", c.ID, len(msg.Digest))
+			c.mu.Unlock() // Explicit unlock
 			return
 		}
 	}
@@ -157,6 +187,7 @@ func (c *Consensus) Handle(msg *types.ConsensusMessage) {
 			NodeId: c.ID,
 		}
 		c.sign(reply)
+		c.mu.Unlock() // Explicit unlock
 		c.Network.Broadcast(c.Peers, reply)
 
 	case types.MessageType_PREPARE:
@@ -173,8 +204,11 @@ func (c *Consensus) Handle(msg *types.ConsensusMessage) {
 				NodeId: c.ID,
 			}
 			c.sign(commit)
+			c.mu.Unlock() // Explicit unlock
 			c.Network.Broadcast(c.Peers, commit)
+			return // Return after broadcasting commit and unlocking
 		}
+		c.mu.Unlock() // Explicit unlock if not broadcasting commit
 
 	case types.MessageType_COMMIT:
 		if _, ok := c.Commit[key]; !ok {
@@ -183,10 +217,19 @@ func (c *Consensus) Handle(msg *types.ConsensusMessage) {
 		c.Commit[key][msg.NodeId] = true
 
 		if len(c.Commit[key]) >= 2*c.F+1 {
-			fmt.Println("✅ CONSENSUS REACHED [View:", c.View, "]:", key)
+			fmt.Printf("✅ CONSENSUS REACHED [View:%d]: %s\n", c.View, key)
 			c.WAL.Write("COMMITTED:" + key)
 			c.resetTimer()
+
+			if c.OnCommit != nil {
+				var d [64]byte
+				copy(d[:], msg.Digest)
+				c.mu.Unlock() // Explicit unlock before calling OnCommit
+				c.OnCommit(d)
+				return // Return after OnCommit
+			}
 		}
+		c.mu.Unlock() // Explicit unlock if not calling OnCommit
 
 	case types.MessageType_VIEW_CHANGE:
 		targetView := msg.View
@@ -206,6 +249,7 @@ func (c *Consensus) Handle(msg *types.ConsensusMessage) {
 				fmt.Printf("👑 Node %s is the NEW LEADER for View %d.\n", c.ID, c.View)
 			}
 		}
+		c.mu.Unlock() // Explicit unlock at the end of the VIEW_CHANGE case
 	}
 }
 
@@ -221,17 +265,23 @@ func (c *Consensus) resetTimer() {
 
 func (c *Consensus) Monitor() {
 	for range c.timer.C {
-		c.mu.Lock()
-		fmt.Printf("⏰ Node %s detected Leader Timeout. Initiating View Change...\n", c.ID)
-		nextView := c.View + 1
-		msg := &types.ConsensusMessage{
-			Type:   types.MessageType_VIEW_CHANGE,
-			View:   nextView,
-			NodeId: c.ID,
+		c.mu.Lock() // Lock for the entire block
+		if c.IsLeader() {
+			c.mu.Unlock() // Unlock before calling Heartbeat, as Heartbeat handles its own locking
+			c.Heartbeat()
+		} else {
+			// Trigger View Change if no progress
+			fmt.Printf("⏰ Node %s detected Leader Timeout. Initiating View Change...\n", c.ID)
+			nextView := c.View + 1
+			msg := &types.ConsensusMessage{
+				Type:   types.MessageType_VIEW_CHANGE,
+				View:   nextView,
+				NodeId: c.ID,
+			}
+			c.sign(msg)
+			c.Network.Broadcast(c.Peers, msg)
+			c.mu.Unlock() // Unlock after view change logic
 		}
-		c.sign(msg)
-		c.Network.Broadcast(c.Peers, msg)
-		c.mu.Unlock()
-		c.resetTimer()
+		c.resetTimer() // Reset timer regardless of leader status or view change
 	}
 }

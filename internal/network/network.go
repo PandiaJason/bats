@@ -43,6 +43,10 @@ func NewClient(nodeID string) *Client {
 	}
 }
 
+func (c *Client) GetHTTPClient() *http.Client {
+	return c.h3Client
+}
+
 func (c *Client) Send(addr string, msg *types.ConsensusMessage) error {
 	data, err := proto.Marshal(msg)
 	if err != nil {

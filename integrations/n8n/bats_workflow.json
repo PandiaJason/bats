@@ -1,0 +1,96 @@
+{
+  "name": "BATS Safety Gate",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "trigger-action",
+        "options": {}
+      },
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "model": "gpt-4o",
+        "prompt": "={{$node[\"Webhook\"].json[\"body\"][\"prompt\"]}}",
+        "messages": [
+          {
+            "role": "user",
+            "content": "Suggest a single-line command for this request."
+          }
+        ]
+      },
+      "name": "AI Agent",
+      "type": "n8n-nodes-base.openAi",
+      "typeVersion": 1,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://bats-cluster:8001/validate",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "action",
+              "value": "={{$node[\"AI Agent\"].json[\"content\"]}}"
+            }
+          ]
+        },
+        "options": {
+          "allowUnauthorizedCerts": true
+        }
+      },
+      "name": "BATS Validator",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$node[\"BATS Validator\"].json[\"approved\"]}}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "name": "Is Approved?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [850, 300]
+    },
+    {
+      "parameters": {
+        "command": "={{$node[\"AI Agent\"].json[\"content\"]}}"
+      },
+      "name": "Execute Action",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [1050, 200]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [[{ "node": "AI Agent", "type": "main", "index": 0 }]]
+    },
+    "AI Agent": {
+      "main": [[{ "node": "BATS Validator", "type": "main", "index": 0 }]]
+    },
+    "BATS Validator": {
+      "main": [[{ "node": "Is Approved?", "type": "main", "index": 0 }]]
+    },
+    "Is Approved?": {
+      "main": [
+        [{ "node": "Execute Action", "type": "main", "index": 0 }],
+        []
+      ]
+    }
+  }
+}
