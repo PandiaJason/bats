@@ -1,12 +1,15 @@
 # BATS: Byzantine Agent Trust System
 
-> **A High-Performance, Zero-Trust Consensus Framework for Decentralized Autonomous Agents**
+> **A Production-Ready Architecture & Framework for Verifiable Agentic Consensus**
+
+[![Go Version](https://img.shields.io/badge/Go-1.24+-00ADD8?style=flat&logo=go)](https://golang.org/)
+[![Status](https://img.shields.io/badge/Status-Advanced%20Prototype-orange)](https://github.com/PandiaJason/bats)
 
 ---
 
 ## Abstract
 
-As autonomous agents transition from isolated entities to collaborative networks, the requirement for a resilient, verifiable, and trustless coordination layer becomes paramount. The **Byzantine Agent Trust System (BATS)** addresses this by providing a Practical Byzantine Fault Tolerant (PBFT) consensus engine optimized for high-frequency agentic interactions. BATS integrates industrial-grade security primitives with performance-centric transport layers such as QUIC (HTTP/3). This document outlines the architectural principles, consensus methodology, and technical specifications of the BATS framework, specifically addressing the challenges of non-deterministic agreement in the age of Generative AI.
+As autonomous agents transition from isolated entities to collaborative networks, the requirement for a resilient, verifiable, and trustless coordination layer becomes paramount. The **Byzantine Agent Trust System (BATS)** addresses this by providing a robust **Production-Ready Architecture** for Practical Byzantine Fault Tolerant (PBFT) consensus. Optimized for high-frequency agentic interactions, BATS integrates mTLS-secured transport with HTTP/3 (QUIC) and Protobuf serialization. This document outlines the framework's protocol specification, current implementation status, and its application as a **Verifiable Agreement Layer (VAL)** for non-deterministic Generative AI environments.
 
 ---
 
@@ -109,7 +112,7 @@ Under standard PBFT assumptions:
 
 | Component | Technology |
 | :--- | :--- |
-| **Version** | BATS Protocol v1.1 (March 2026) |
+| **Version** | BATS Protocol v1.2 (Active Development) |
 | **Language** | Go 1.24+ |
 | **Consensus** | PBFT (Practical Byzantine Fault Tolerance) |
 | **Encryption** | Ed25519 (Signatures), SHA-512 (Hashing) |
