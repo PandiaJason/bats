@@ -5,41 +5,53 @@ import (
 	"fmt"
 	"sync"
 
+	"bats/internal/crypto"
 	"bats/internal/network"
 	"bats/internal/storage"
 	"bats/internal/types"
+	"time"
 )
 
 type Consensus struct {
 	mu sync.Mutex
 
-	View    uint64
-	Prepare map[string]map[string]bool
-	Commit  map[string]map[string]bool
-	Weights map[string]int
+	View            uint64
+	Prepare         map[string]map[string]bool
+	Commit          map[string]map[string]bool
+	ViewChangeVotes map[uint64]map[string]bool
+	Weights         map[string]int
 
 	F     int
 	ID    string
 	Peers []string
 	WAL   *storage.WAL
+
+	// 🔐 Security: Ed25519 keys for Byzantine-safe message authentication
+	PrivateKey []byte
+	PublicKeys map[string][]byte
+
+	timer *time.Timer
 }
 
-func New(id string, peers []string, f int, wal *storage.WAL) *Consensus {
+func New(id string, peers []string, f int, wal *storage.WAL, priv []byte, pubs map[string][]byte) *Consensus {
 	weights := make(map[string]int)
-	// Default weights for all nodes (including peers and self)
 	weights[id] = 1
 	for _, p := range peers {
 		weights[p] = 1
 	}
 
 	return &Consensus{
-		Prepare: make(map[string]map[string]bool),
-		Commit:  make(map[string]map[string]bool),
-		Weights: weights,
-		F:       f,
-		ID:      id,
-		Peers:   peers,
-		WAL:     wal,
+		Prepare:         make(map[string]map[string]bool),
+		Commit:          make(map[string]map[string]bool),
+		ViewChangeVotes: make(map[uint64]map[string]bool),
+		Weights:         weights,
+		F:               f,
+		ID:              id,
+		Peers:           peers,
+		WAL:             wal,
+		PrivateKey:      priv,
+		PublicKeys:      pubs,
+		timer:           time.NewTimer(5 * time.Second),
 	}
 }
 
@@ -84,12 +96,28 @@ func (c *Consensus) Start(digest [64]byte) {
 		Digest: digest[:],
 		NodeId: c.ID,
 	}
+
+	// 🔐 Digital Signature for authenticating the PrePrepare message
+	msg.Signature = crypto.Sign(c.PrivateKey, msg.Digest)
 	network.Broadcast(c.Peers, msg)
 }
 
 func (c *Consensus) Handle(msg *types.ConsensusMessage) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
+
+	// 🛡️ Byzantine Validation: Verify sender identity and signature
+	if pub, ok := c.PublicKeys[msg.NodeId]; ok {
+		// In a real system, we'd marshal the fields or use a canonical form for signing
+		// Here we verify the digest against the signature for simplicity (proving the concept)
+		if !crypto.Verify(pub, msg.Digest, msg.Signature) {
+			fmt.Printf("⛔ Node %s: SIGNATURE VERIFICATION FAILED from Node %s. Dropping message.\n", c.ID, msg.NodeId)
+			return
+		}
+	} else {
+		fmt.Printf("⚠️ Node %s: UNKNOWN NODE ID %s. Dropping message.\n", c.ID, msg.NodeId)
+		return
+	}
 
 	// Only process messages for the current view
 	if msg.View < c.View {
@@ -106,12 +134,14 @@ func (c *Consensus) Handle(msg *types.ConsensusMessage) {
 	switch msg.Type {
 
 	case types.MessageType_PREPREPARE:
-		network.Broadcast(c.Peers, &types.ConsensusMessage{
+		msg := &types.ConsensusMessage{
 			Type:   types.MessageType_PREPARE,
 			View:   c.View,
 			Digest: msg.Digest,
 			NodeId: c.ID,
-		})
+		}
+		msg.Signature = crypto.Sign(c.PrivateKey, msg.Digest)
+		network.Broadcast(c.Peers, msg)
 
 	case types.MessageType_PREPARE:
 		if _, ok := c.Prepare[key]; !ok {
@@ -120,12 +150,14 @@ func (c *Consensus) Handle(msg *types.ConsensusMessage) {
 		c.Prepare[key][msg.NodeId] = true
 
 		if len(c.Prepare[key]) >= 2*c.F+1 {
-			network.Broadcast(c.Peers, &types.ConsensusMessage{
+			msg := &types.ConsensusMessage{
 				Type:   types.MessageType_COMMIT,
 				View:   c.View,
 				Digest: msg.Digest,
 				NodeId: c.ID,
-			})
+			}
+			msg.Signature = crypto.Sign(c.PrivateKey, msg.Digest)
+			network.Broadcast(c.Peers, msg)
 		}
 
 	case types.MessageType_COMMIT:
@@ -137,6 +169,52 @@ func (c *Consensus) Handle(msg *types.ConsensusMessage) {
 		if len(c.Commit[key]) >= 2*c.F+1 {
 			fmt.Println("✅ CONSENSUS REACHED [View:", c.View, "]:", key)
 			c.WAL.Write("COMMITTED:" + key)
+			c.resetTimer()
 		}
+
+	case types.MessageType_VIEW_CHANGE:
+		targetView := msg.View
+		if _, ok := c.ViewChangeVotes[targetView]; !ok {
+			c.ViewChangeVotes[targetView] = make(map[string]bool)
+		}
+		c.ViewChangeVotes[targetView][msg.NodeId] = true
+
+		if len(c.ViewChangeVotes[targetView]) >= 2*c.F+1 && targetView > c.View {
+			fmt.Printf("🔄 VIEW CHANGE QUORUM REACHED for View %d. Transitioning...\n", targetView)
+			c.View = targetView
+			c.Prepare = make(map[string]map[string]bool)
+			c.Commit = make(map[string]map[string]bool)
+			c.resetTimer()
+
+			if c.IsLeader() {
+				fmt.Printf("👑 Node %s is the NEW LEADER for View %d.\n", c.ID, c.View)
+			}
+		}
+	}
+}
+
+func (c *Consensus) resetTimer() {
+	if !c.timer.Stop() {
+		select {
+		case <-c.timer.C:
+		default:
+		}
+	}
+	c.timer.Reset(5 * time.Second)
+}
+
+func (c *Consensus) Monitor() {
+	for range c.timer.C {
+		c.mu.Lock()
+		fmt.Printf("⏰ Node %s detected Leader Timeout. Initiating View Change...\n", c.ID)
+		nextView := c.View + 1
+		msg := &types.ConsensusMessage{
+			Type:   types.MessageType_VIEW_CHANGE,
+			View:   nextView,
+			NodeId: c.ID,
+		}
+		network.Broadcast(c.Peers, msg)
+		c.mu.Unlock()
+		c.resetTimer()
 	}
 }

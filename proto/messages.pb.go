@@ -24,9 +24,11 @@ const (
 type MessageType int32
 
 const (
-	MessageType_PREPREPARE MessageType = 0
-	MessageType_PREPARE    MessageType = 1
-	MessageType_COMMIT     MessageType = 2
+	MessageType_PREPREPARE  MessageType = 0
+	MessageType_PREPARE     MessageType = 1
+	MessageType_COMMIT      MessageType = 2
+	MessageType_VIEW_CHANGE MessageType = 3
+	MessageType_NEW_VIEW    MessageType = 4
 )
 
 // Enum value maps for MessageType.
@@ -35,11 +37,15 @@ var (
 		0: "PREPREPARE",
 		1: "PREPARE",
 		2: "COMMIT",
+		3: "VIEW_CHANGE",
+		4: "NEW_VIEW",
 	}
 	MessageType_value = map[string]int32{
-		"PREPREPARE": 0,
-		"PREPARE":    1,
-		"COMMIT":     2,
+		"PREPREPARE":  0,
+		"PREPARE":     1,
+		"COMMIT":      2,
+		"VIEW_CHANGE": 3,
+		"NEW_VIEW":    4,
 	}
 )
 
@@ -71,12 +77,15 @@ func (MessageType) EnumDescriptor() ([]byte, []int) {
 }
 
 type ConsensusMessage struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Type          MessageType            `protobuf:"varint,1,opt,name=type,proto3,enum=types.MessageType" json:"type,omitempty"`
-	View          uint64                 `protobuf:"varint,2,opt,name=view,proto3" json:"view,omitempty"`
-	Sequence      uint64                 `protobuf:"varint,3,opt,name=sequence,proto3" json:"sequence,omitempty"`
-	Digest        []byte                 `protobuf:"bytes,4,opt,name=digest,proto3" json:"digest,omitempty"`
-	NodeId        string                 `protobuf:"bytes,5,opt,name=node_id,json=nodeId,proto3" json:"node_id,omitempty"`
+	state     protoimpl.MessageState `protogen:"open.v1"`
+	Type      MessageType            `protobuf:"varint,1,opt,name=type,proto3,enum=types.MessageType" json:"type,omitempty"`
+	View      uint64                 `protobuf:"varint,2,opt,name=view,proto3" json:"view,omitempty"`
+	Sequence  uint64                 `protobuf:"varint,3,opt,name=sequence,proto3" json:"sequence,omitempty"`
+	Digest    []byte                 `protobuf:"bytes,4,opt,name=digest,proto3" json:"digest,omitempty"`
+	NodeId    string                 `protobuf:"bytes,5,opt,name=node_id,json=nodeId,proto3" json:"node_id,omitempty"`
+	Signature []byte                 `protobuf:"bytes,6,opt,name=signature,proto3" json:"signature,omitempty"`
+	// Extensions for View Change
+	PrePrepares   []*ConsensusMessage `protobuf:"bytes,7,rep,name=pre_prepares,json=prePrepares,proto3" json:"pre_prepares,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -144,6 +153,20 @@ func (x *ConsensusMessage) GetNodeId() string {
 		return x.NodeId
 	}
 	return ""
+}
+
+func (x *ConsensusMessage) GetSignature() []byte {
+	if x != nil {
+		return x.Signature
+	}
+	return nil
+}
+
+func (x *ConsensusMessage) GetPrePrepares() []*ConsensusMessage {
+	if x != nil {
+		return x.PrePrepares
+	}
+	return nil
 }
 
 type Header struct {
@@ -278,13 +301,15 @@ var File_proto_messages_proto protoreflect.FileDescriptor
 
 const file_proto_messages_proto_rawDesc = "" +
 	"\n" +
-	"\x14proto/messages.proto\x12\x05types\"\x9b\x01\n" +
+	"\x14proto/messages.proto\x12\x05types\"\xf5\x01\n" +
 	"\x10ConsensusMessage\x12&\n" +
 	"\x04type\x18\x01 \x01(\x0e2\x12.types.MessageTypeR\x04type\x12\x12\n" +
 	"\x04view\x18\x02 \x01(\x04R\x04view\x12\x1a\n" +
 	"\bsequence\x18\x03 \x01(\x04R\bsequence\x12\x16\n" +
 	"\x06digest\x18\x04 \x01(\fR\x06digest\x12\x17\n" +
-	"\anode_id\x18\x05 \x01(\tR\x06nodeId\"|\n" +
+	"\anode_id\x18\x05 \x01(\tR\x06nodeId\x12\x1c\n" +
+	"\tsignature\x18\x06 \x01(\fR\tsignature\x12:\n" +
+	"\fpre_prepares\x18\a \x03(\v2\x17.types.ConsensusMessageR\vprePrepares\"|\n" +
 	"\x06Header\x12\x18\n" +
 	"\aversion\x18\x01 \x01(\rR\aversion\x12\x1a\n" +
 	"\bsequence\x18\x02 \x01(\x04R\bsequence\x12\x1b\n" +
@@ -294,13 +319,15 @@ const file_proto_messages_proto_rawDesc = "" +
 	"\bEnvelope\x12%\n" +
 	"\x06header\x18\x01 \x01(\v2\r.types.HeaderR\x06header\x12\x18\n" +
 	"\apayload\x18\x02 \x01(\fR\apayload\x12\x1c\n" +
-	"\tsignature\x18\x03 \x01(\fR\tsignature*6\n" +
+	"\tsignature\x18\x03 \x01(\fR\tsignature*U\n" +
 	"\vMessageType\x12\x0e\n" +
 	"\n" +
 	"PREPREPARE\x10\x00\x12\v\n" +
 	"\aPREPARE\x10\x01\x12\n" +
 	"\n" +
-	"\x06COMMIT\x10\x02B\x15Z\x13bats/internal/typesb\x06proto3"
+	"\x06COMMIT\x10\x02\x12\x0f\n" +
+	"\vVIEW_CHANGE\x10\x03\x12\f\n" +
+	"\bNEW_VIEW\x10\x04B\x15Z\x13bats/internal/typesb\x06proto3"
 
 var (
 	file_proto_messages_proto_rawDescOnce sync.Once
@@ -324,12 +351,13 @@ var file_proto_messages_proto_goTypes = []any{
 }
 var file_proto_messages_proto_depIdxs = []int32{
 	0, // 0: types.ConsensusMessage.type:type_name -> types.MessageType
-	2, // 1: types.Envelope.header:type_name -> types.Header
-	2, // [2:2] is the sub-list for method output_type
-	2, // [2:2] is the sub-list for method input_type
-	2, // [2:2] is the sub-list for extension type_name
-	2, // [2:2] is the sub-list for extension extendee
-	0, // [0:2] is the sub-list for field type_name
+	1, // 1: types.ConsensusMessage.pre_prepares:type_name -> types.ConsensusMessage
+	2, // 2: types.Envelope.header:type_name -> types.Header
+	3, // [3:3] is the sub-list for method output_type
+	3, // [3:3] is the sub-list for method input_type
+	3, // [3:3] is the sub-list for extension type_name
+	3, // [3:3] is the sub-list for extension extendee
+	0, // [0:3] is the sub-list for field type_name
 }
 
 func init() { file_proto_messages_proto_init() }

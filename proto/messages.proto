@@ -5,9 +5,11 @@ package types;
 option go_package = "bats/internal/types";
 
 enum MessageType {
-    PREPREPARE = 0;
-    PREPARE = 1;
-    COMMIT = 2;
+    PREPREPARE  = 0;
+    PREPARE     = 1;
+    COMMIT      = 2;
+    VIEW_CHANGE = 3;
+    NEW_VIEW    = 4;
 }
 
 message ConsensusMessage {
@@ -16,6 +18,18 @@ message ConsensusMessage {
     uint64 sequence = 3;
     bytes digest = 4;
     string node_id = 5;
+    bytes signature = 6;
+    
+    // Extensions for View Change
+    repeated ConsensusMessage pre_prepares = 7;
+}
+
+message NodeStatus {
+    string id = 1;
+    string port = 2;
+    bool alive = 3;
+    uint64 view = 4;
+    bool is_leader = 5;
 }
 
 message Header {
