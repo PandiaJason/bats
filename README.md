@@ -1,6 +1,6 @@
 # BATS: Byzantine Agent Trust System
 
-> **A Production-Ready Architecture & Framework for Verifiable Agentic Consensus**
+> **A Byzantine-Resilient Research Architecture & Framework for Verifiable Agentic Consensus**
 
 [![Go Version](https://img.shields.io/badge/Go-1.24+-00ADD8?style=flat&logo=go)](https://golang.org/)
 [![Status](https://img.shields.io/badge/Status-Advanced%20Prototype-orange)](https://github.com/PandiaJason/bats)
@@ -9,7 +9,7 @@
 
 ## Abstract
 
-As autonomous agents transition from isolated entities to collaborative networks, the requirement for a resilient, verifiable, and trustless coordination layer becomes paramount. The **Byzantine Agent Trust System (BATS)** addresses this by providing a robust **Production-Ready Architecture** for Practical Byzantine Fault Tolerant (PBFT) consensus. Optimized for high-frequency agentic interactions, BATS integrates mTLS-secured transport with HTTP/3 (QUIC) and Protobuf serialization. This document outlines the framework's protocol specification, current implementation status, and its application as a **Verifiable Agreement Layer (VAL)** for non-deterministic Generative AI environments.
+As autonomous agents transition from isolated entities to collaborative networks, the requirement for a resilient, verifiable, and trustless coordination layer becomes paramount. The **Byzantine Agent Trust System (BATS)** addresses this by providing a robust **Byzantine-Resilient Research Architecture** for Practical Byzantine Fault Tolerant (PBFT) consensus. Optimized for high-frequency agentic interactions, BATS integrates mTLS-secured transport with HTTP/3 (QUIC) and Protobuf serialization. This document outlines the framework's protocol specification, current implementation status, and its application as a **Verifiable Agreement Layer (VAL)** for non-deterministic Generative AI environments.
 
 ---
 
@@ -51,11 +51,18 @@ The BATS architecture is built on a "Zero-Trust" foundation at every layer.
 ### 4.1 Networking & Security
 - **mTLS Enforcement**: Mutual TLS using a private Root CA for all node authentication.
 - **Protobuf v3**: Deterministic binary serialization for minimal overhead.
-- **Transport Layers**: Primary support for **QUIC (HTTP/3)** for production, with HTTPS/2 fallback.
+- **Transport Layers**: QUIC (HTTP/3) support for high-concurrency environments (experimental / active development), with HTTPS/2 fallback.
 
 ### 4.2 Storage & Persistence
 - **Write-Ahead Log (WAL)**: Thread-safe persistence of all consensus transitions.
 - **Automated Pruning**: WAL rotation and checkpointing to maintain storage efficiency.
+
+### 4.3 Design Principles
+- **Zero-Trust by Default**: No assumption of node or agent honesty.
+- **Consensus over Single-Agent Authority**: Strategic decisions require quorum validation.
+- **Deterministic Validation over Heuristic Trust**: Cryptographic proof over "vibe-based" acceptance.
+- **Cryptographic Identity for All Participants**: Ed25519-backed identities for non-repudiation.
+- **Fail-Safe Execution**: Default state of rejection for non-conforming or inconsistent inputs.
 
 ---
 
@@ -85,7 +92,7 @@ The `bats` CLI includes a high-tier adversarial testing suite ("The Gauntlet") t
 
 [DETECTED] Node_4 attempted Payload Mutation (ASI03) -> BLOCKED
 [DETECTED] Node_2 attempted Replay Attack (ASI07)    -> BLOCKED
-[RESULT]   System Resilience: 100% | Safety Margin: f=1
+[RESULT]   System Resilience Score: 100% (no successful adversarial commits)
 ```
 
 ---
@@ -116,7 +123,7 @@ Under standard PBFT assumptions:
 | **Language** | Go 1.24+ |
 | **Consensus** | PBFT (Practical Byzantine Fault Tolerance) |
 | **Encryption** | Ed25519 (Signatures), SHA-512 (Hashing) |
-| **Architecture** | Zero-Trust Verifiable Agreement Layer (VAL) |
+| **Architecture** | Byzantine-Resilient Verifiable Agreement Layer (VAL) |
 
 ---
 
@@ -130,6 +137,16 @@ Under standard PBFT assumptions:
 ## 11. License
 
 This project is licensed under the **MIT License**.
+
+---
+
+## 12. Known Limitations
+
+- **Scalability Constraint**: Requires a minimum of 4 nodes for Byzantine fault tolerance.
+- **Latency Overhead**: Increased processing latency compared to single-agent execution due to multi-phase consensus.
+- **Experimental Transport**: QUIC transport implementation is currently under active development and optimization.
+- **Validation Scope**: Does not eliminate LLM hallucinations; specifically prevents consensus and commitment on inconsistent or contradictory agent outputs.
+- **Benchmarking**: Performance characteristics are derived from controlled research environments.
 
 ---
 

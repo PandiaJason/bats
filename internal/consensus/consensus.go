@@ -9,6 +9,7 @@ import (
 	"bats/internal/network"
 	"bats/internal/storage"
 	"bats/internal/types"
+	"google.golang.org/protobuf/proto"
 	"time"
 )
 
@@ -30,10 +31,11 @@ type Consensus struct {
 	PrivateKey []byte
 	PublicKeys map[string][]byte
 
-	timer *time.Timer
+	Network *network.Client
+	timer   *time.Timer
 }
 
-func New(id string, peers []string, f int, wal *storage.WAL, priv []byte, pubs map[string][]byte) *Consensus {
+func New(id string, peers []string, f int, wal *storage.WAL, priv []byte, pubs map[string][]byte, net *network.Client) *Consensus {
 	weights := make(map[string]int)
 	weights[id] = 1
 	for _, p := range peers {
@@ -51,6 +53,7 @@ func New(id string, peers []string, f int, wal *storage.WAL, priv []byte, pubs m
 		WAL:             wal,
 		PrivateKey:      priv,
 		PublicKeys:      pubs,
+		Network:         net,
 		timer:           time.NewTimer(5 * time.Second),
 	}
 }
@@ -98,8 +101,14 @@ func (c *Consensus) Start(digest [64]byte) {
 	}
 
 	// 🔐 Digital Signature for authenticating the PrePrepare message
-	msg.Signature = crypto.Sign(c.PrivateKey, msg.Digest)
-	network.Broadcast(c.Peers, msg)
+	c.sign(msg)
+	c.Network.Broadcast(c.Peers, msg)
+}
+
+func (c *Consensus) sign(msg *types.ConsensusMessage) {
+	msg.Signature = nil
+	data, _ := proto.Marshal(msg)
+	msg.Signature = crypto.Sign(c.PrivateKey, data)
 }
 
 func (c *Consensus) Handle(msg *types.ConsensusMessage) {
@@ -108,9 +117,13 @@ func (c *Consensus) Handle(msg *types.ConsensusMessage) {
 
 	// 🛡️ Byzantine Validation: Verify sender identity and signature
 	if pub, ok := c.PublicKeys[msg.NodeId]; ok {
-		// In a real system, we'd marshal the fields or use a canonical form for signing
-		// Here we verify the digest against the signature for simplicity (proving the concept)
-		if !crypto.Verify(pub, msg.Digest, msg.Signature) {
+		// 🏁 v1.2: Verify the entire message content
+		sig := msg.Signature
+		msg.Signature = nil
+		data, _ := proto.Marshal(msg)
+		msg.Signature = sig
+
+		if !crypto.Verify(pub, data, sig) {
 			fmt.Printf("⛔ Node %s: SIGNATURE VERIFICATION FAILED from Node %s. Dropping message.\n", c.ID, msg.NodeId)
 			return
 		}
@@ -124,9 +137,12 @@ func (c *Consensus) Handle(msg *types.ConsensusMessage) {
 		return
 	}
 
-	if len(msg.Digest) != 64 {
-		fmt.Printf("❌ Node %s: Rejected message with invalid digest length (%d bytes)\n", c.ID, len(msg.Digest))
-		return
+	// 🛡️ Digest Validation: Only for standard consensus phases
+	if msg.Type == types.MessageType_PREPREPARE || msg.Type == types.MessageType_PREPARE || msg.Type == types.MessageType_COMMIT {
+		if len(msg.Digest) != 64 {
+			fmt.Printf("❌ Node %s: Rejected message with invalid digest length (%d bytes)\n", c.ID, len(msg.Digest))
+			return
+		}
 	}
 
 	key := hex.EncodeToString(msg.Digest)
@@ -134,14 +150,14 @@ func (c *Consensus) Handle(msg *types.ConsensusMessage) {
 	switch msg.Type {
 
 	case types.MessageType_PREPREPARE:
-		msg := &types.ConsensusMessage{
+		reply := &types.ConsensusMessage{
 			Type:   types.MessageType_PREPARE,
 			View:   c.View,
 			Digest: msg.Digest,
 			NodeId: c.ID,
 		}
-		msg.Signature = crypto.Sign(c.PrivateKey, msg.Digest)
-		network.Broadcast(c.Peers, msg)
+		c.sign(reply)
+		c.Network.Broadcast(c.Peers, reply)
 
 	case types.MessageType_PREPARE:
 		if _, ok := c.Prepare[key]; !ok {
@@ -150,14 +166,14 @@ func (c *Consensus) Handle(msg *types.ConsensusMessage) {
 		c.Prepare[key][msg.NodeId] = true
 
 		if len(c.Prepare[key]) >= 2*c.F+1 {
-			msg := &types.ConsensusMessage{
+			commit := &types.ConsensusMessage{
 				Type:   types.MessageType_COMMIT,
 				View:   c.View,
 				Digest: msg.Digest,
 				NodeId: c.ID,
 			}
-			msg.Signature = crypto.Sign(c.PrivateKey, msg.Digest)
-			network.Broadcast(c.Peers, msg)
+			c.sign(commit)
+			c.Network.Broadcast(c.Peers, commit)
 		}
 
 	case types.MessageType_COMMIT:
@@ -213,7 +229,8 @@ func (c *Consensus) Monitor() {
 			View:   nextView,
 			NodeId: c.ID,
 		}
-		network.Broadcast(c.Peers, msg)
+		c.sign(msg)
+		c.Network.Broadcast(c.Peers, msg)
 		c.mu.Unlock()
 		c.resetTimer()
 	}

@@ -1,8 +1,9 @@
-# Contributing to BATS
+# Contributing toThe BATS (Byzantine Agent Trust System) is a high-integrity, **Byzantine-Resilient** coordination layer. We maintain strict engineering standards to ensure that the "wire" beneath autonomous agents remains secure and deterministic.
 
-> **Byzantine Resilience requires Zero-Tolerance Engineering.**
+## 🎖️ Engineering Philosophy
 
-BATS is a mission-critical infrastructure for the decentralized agentic web. A single non-deterministic flaw or memory vulnerability could invalidate the safety guarantees of the entire Verifiable Agreement Layer (VAL). To maintain the integrity of the protocol, all contributions must adhere to the following rigorous standards.
+We follow a **Byzantine-Resilient** approach. A single bug in the consensus logic can compromise the safety of the entire agent swarm. Therefore, we do not "vibe-code." Every change must be backed by:
+integrity of the protocol, all contributions must adhere to the following rigorous standards.
 
 ---
 

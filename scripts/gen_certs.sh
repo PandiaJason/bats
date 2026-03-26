@@ -1,22 +1,35 @@
 #!/bin/bash
+mkdir -p certs
 
-CERT_DIR="certs"
-mkdir -p $CERT_DIR
+# 1. Generate Root CA
+openssl genrsa -out certs/ca.key 2048
+openssl req -x509 -new -nodes -key certs/ca.key -sha256 -days 365 -out certs/ca.crt -subj "/CN=BATS-CA"
 
-# Generate CA key and certificate
-openssl genrsa -out $CERT_DIR/ca.key 2048
-openssl req -x509 -new -nodes -key $CERT_DIR/ca.key -sha256 -days 365 -out $CERT_DIR/ca.crt -subj "/CN=BATS-CA"
+# Create a temporary Go generator for Ed25519
+cat > gen_identity.go <<EOF
+package main
+import (
+    "crypto/ed25519"
+    "os"
+)
+func main() {
+    nodeID := os.Args[1]
+    pub, priv, _ := ed25519.GenerateKey(nil)
+    os.WriteFile("certs/"+nodeID+".pub", pub, 0644)
+    os.WriteFile("certs/"+nodeID+".identity", priv, 0600)
+}
+EOF
 
-# For each node (node1 to node4), generate a key and certificate
-for i in {1..4}
-do
+for i in 1 2 3 4; do
     NODE="node$i"
-    echo "Generating cert for $NODE..."
-    openssl genrsa -out $CERT_DIR/$NODE.key 2048
-    openssl req -new -key $CERT_DIR/$NODE.key -out $CERT_DIR/$NODE.csr -subj "/CN=$NODE"
-    
-    # Sign with CA (simplified, using SANs if needed, but CN is often enough for local testing)
-    openssl x509 -req -in $CERT_DIR/$NODE.csr -CA $CERT_DIR/ca.crt -CAkey $CERT_DIR/ca.key -CAcreateserial -out $CERT_DIR/$NODE.crt -days 365 -sha256
+    # 2. Generate TLS Certs
+    openssl genrsa -out "certs/$NODE.key" 2048
+    openssl req -new -key "certs/$NODE.key" -out "certs/$NODE.csr" -subj "/CN=$NODE"
+    openssl x509 -req -in "certs/$NODE.csr" -CA certs/ca.crt -CAkey certs/ca.key -CAcreateserial -out "certs/$NODE.crt" -days 365 -sha256
+
+    # 3. Generate Ed25519 Identity
+    go run gen_identity.go "$NODE"
 done
 
-echo "Certificates generated in $CERT_DIR"
+rm gen_identity.go
+echo "Certificates and Ed25519 Identities generated in certs/"
