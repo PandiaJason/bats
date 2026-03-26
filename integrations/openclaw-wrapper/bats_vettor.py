@@ -1,9 +1,14 @@
-import requests
 import json
+import urllib.request
+import urllib.error
+import ssl
 
 class BatsSafetyGate:
-    def __init__(self, endpoint="https://bats.xs10s.network/validate"):
+    def __init__(self, endpoint="https://localhost:8001/validate"):
         self.endpoint = endpoint
+        # 🔐 In a production/enterprise setting, we'd load the CA cert.
+        # For local research and verification, we disable SSL verification.
+        self.ssl_context = ssl._create_unverified_context()
 
     def validate_action(self, action):
         """
@@ -11,15 +16,23 @@ class BatsSafetyGate:
         Returns: (True, digest) if approved, (False, error) otherwise.
         """
         try:
-            payload = {"action": action}
-            response = requests.post(self.endpoint, json=payload, timeout=5)
-            data = response.json()
+            payload = json.dumps({"action": action}).encode("utf-8")
+            req = urllib.request.Request(
+                self.endpoint, 
+                data=payload, 
+                headers={"Content-Type": "application/json"},
+                method="POST"
+            )
             
-            if data.get("approved"):
-                return True, data.get("digest")
-            return False, data.get("reason", "Consensus Rejected")
-        except Exception as e:
+            with urllib.request.urlopen(req, context=self.ssl_context, timeout=5) as response:
+                data = json.loads(response.read().decode("utf-8"))
+                if data.get("approved"):
+                    return True, data.get("digest")
+                return False, data.get("reason", "Consensus Rejected")
+        except urllib.error.URLError as e:
             return False, f"BATS_UNREACHABLE: {str(e)}"
+        except Exception as e:
+            return False, f"BATS_ERROR: {str(e)}"
 
     def execute_safely(self, action, execution_fn):
         """
@@ -32,7 +45,3 @@ class BatsSafetyGate:
         else:
             print(f"[BATS] ❌ ACTION BLOCKED: {info}")
             return {"error": "BATS_SAFETY_VIOLATION", "details": info}
-
-# Example Usage with OpenClaw:
-# gate = BatsSafetyGate()
-# gate.execute_safely("rm -rf /", lambda x: print(f"Executing {x}"))
