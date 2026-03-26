@@ -6,7 +6,7 @@
 > [!IMPORTANT]
 > **Positioning**: BATS is NOT a model provider. BATS is the **Integrity Layer** that vets model outputs before they touch real-world infrastructure.
 
-### [🚀 Explore BATS Landing Page](file:///Users/admin/BATS/bats/website/index.html)
+### [🚀 Explore BATS Landing Page](https://PandiaJason.github.io/bats/)
 
 [![Go Version](https://img.shields.io/badge/Go-1.24+-00ADD8?style=flat&logo=go)](https://golang.org/)
 [![Status](https://img.shields.io/badge/Status-Advanced%20Prototype-orange)](https://github.com/PandiaJason/bats)
