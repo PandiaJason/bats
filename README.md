@@ -1,6 +1,11 @@
-# BATS: Byzantine Agent Trust System
+# BATS: Byzantine Agent Trust System 🦇🔬
+### Early-Stage Research Architecture & Unified Validation Layer (v1.4 Beta)
 
-> **A Byzantine-Resilient Research Architecture & Framework for Verifiable Agentic Consensus**
+**BATS** is an experimental Byzantine-Resilient Research Architecture designed to solve the problem of **Agentic Non-Determinism**. By treating LLM "hallucinations" as protocol faults, BATS provides a verifiable agreement layer for the next generation of autonomous agent networks.
+
+> [!WARNING]
+> **Project Status: Early-Stage Research.**
+> BATS v1.4 is a prototype for researchers and automation engineers. It is **not enterprise-ready**, not audited for production-grade security, and currently suited for controlled environments and high-integrity R&D.
 
 [![Go Version](https://img.shields.io/badge/Go-1.24+-00ADD8?style=flat&logo=go)](https://golang.org/)
 [![Status](https://img.shields.io/badge/Status-Advanced%20Prototype-orange)](https://github.com/PandiaJason/bats)
@@ -160,8 +165,11 @@ This project is licensed under the **MIT License**.
 
 ---
 
-## 12. Known Limitations
-
+## 🛡️ Research Roadmap & Limitations
+BATS is currently in **Beta (v1.4)**. Before reaching Enterprise-Grade status, the following are required:
+- **Formal Audit**: Cryptographic and consensus logic require third-party formal verification.
+- **Dynamic Membership**: Automated node joining/leaving without manual cluster orchestration.
+- **Advanced Sharding**: Handling massive node clusters with sub-second latency.
 - **Scalability Constraint**: Requires a minimum of 4 nodes for Byzantine fault tolerance.
 - **Latency Overhead**: Increased processing latency compared to single-agent execution due to multi-phase consensus.
 - **Experimental Transport**: QUIC transport implementation is currently under active development and optimization.
