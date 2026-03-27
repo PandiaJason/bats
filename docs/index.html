@@ -16,6 +16,8 @@
             --text-dim: #94a3b8;
             --glass-bg: rgba(255, 255, 255, 0.03);
             --glass-border: rgba(255, 255, 255, 0.1);
+            --danger-color: #ef4444;
+            --success-color: #22c55e;
         }
 
         * {
@@ -165,13 +167,33 @@
         .section {
             padding: 100px 10%;
             background: var(--bg-color);
+            border-top: 1px solid var(--glass-border);
+        }
+
+        .section-title {
+            font-size: 2.5rem;
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+
+        .section-subtitle {
+            text-align: center;
+            color: var(--text-dim);
+            max-width: 800px;
+            margin: 0 auto 4rem auto;
+            font-size: 1.1rem;
         }
 
         .grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             gap: 2rem;
-            margin-top: 4rem;
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 3rem;
         }
 
         .card {
@@ -199,12 +221,10 @@
         }
 
         .integration-preview {
-            margin-top: 100px;
             background: #000;
             border: 1px solid var(--glass-border);
             border-radius: 20px;
             padding: 40px;
-            text-align: left;
             position: relative;
         }
 
@@ -217,12 +237,52 @@
             color: #d1d5db;
             border: 1px solid #1f2937;
             overflow-x: auto;
+            margin-bottom: 1.5rem;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 2rem 0;
+            background: var(--glass-bg);
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid var(--glass-border);
+            font-size: 0.95rem;
+        }
+        
+        th, td {
+            padding: 1.25rem;
+            text-align: left;
+            border-bottom: 1px solid var(--glass-border);
+            color: var(--text-dim);
+        }
+        
+        th {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-main);
+            font-weight: 600;
+        }
+
+        td.blocked {
+            color: var(--danger-color);
+            font-weight: 600;
+        }
+
+        td.passed {
+            color: var(--success-color);
+            font-weight: 600;
+        }
+
+        .text-accent {
+            color: var(--accent-color);
         }
 
         .footer {
             padding: 60px 10%;
             text-align: center;
             border-top: 1px solid var(--glass-border);
+            background: #020202;
         }
 
         .xs10s-logo {
@@ -235,7 +295,7 @@
 
         @media (max-width: 768px) {
             h1 { font-size: 3rem; }
-            .grid { grid-template-columns: 1fr; }
+            .grid, .grid-2 { grid-template-columns: 1fr; }
         }
     </style>
 </head>
@@ -245,63 +305,218 @@
     <nav>
         <div class="logo">BATS<span>.</span></div>
         <div class="nav-links">
-            <a href="#features">FEATURES</a>
+            <a href="#why-bats">ABOUT</a>
+            <a href="#quickstart">QUICKSTART</a>
+            <a href="#testing">TESTING</a>
             <a href="#integrations">INTEGRATIONS</a>
+            <a href="#security">SECURITY</a>
             <a href="https://github.com/PandiaJason/bats">GITHUB</a>
         </div>
     </nav>
 
     <div class="hero">
-        <div class="badge">V1.4 BETA RESEARCH RELEASE</div>
+        <div class="badge">V2.0 ENTERPRISE RELEASE</div>
         <h1>BATS prevents unsafe AI actions before they happen.</h1>
-        <p class="subtitle">BATS is the deterministic integrity layer for AI agents. Validate every action before execution using Byzantine-resilient consensus.</p>
+        <p class="subtitle">BATS is the deterministic integrity layer for AI agents. Validate every action before execution using Byzantine-resilient consensus and heuristic AI safety gates.</p>
         <div class="cta-group">
-            <a href="#integrations" class="btn btn-primary">GET STARTED</a>
-            <a href="https://github.com/PandiaJason/bats" class="btn btn-secondary">VIEW CORE</a>
+            <a href="#quickstart" class="btn btn-primary">GET STARTED</a>
+            <a href="https://github.com/PandiaJason/bats" class="btn btn-secondary">VIEW CORE PROTOCOL</a>
         </div>
     </div>
 
+    <!-- WHY BATS -->
+    <section id="why-bats" class="section" style="background: #020202;">
+        <h2 class="section-title">Why BATS?</h2>
+        <p style="max-width: 800px; margin: 0 auto; text-align: center; color: var(--text-dim); font-size: 1.15rem; line-height: 1.8;">
+            In the AI era, the standard approach to autonomous multi-agent orchestration has been either blind trust or frail, centralized API wrappers—leaving critical infrastructure dangerously vulnerable to silent LLM hallucinations and malicious prompt injections. BATS solves this by acting as a decentralized, zero-trust proxy that forces every AI-proposed action to pass a rigid heuristic safety gate and achieve multi-node Byzantine quorum verification before execution, establishing a mathematically sound and tamper-proof new standard for unconditionally secure enterprise AI automation.
+        </p>
+    </section>
+
+    <!-- FEATURES -->
     <section id="features" class="section">
-        <h2 style="font-size: 2.5rem; text-align: center;">Byzantine Intelligence.</h2>
+        <h2 class="section-title">Byzantine Intelligence.</h2>
+        <p class="section-subtitle">A mathematically rigorous consensus layer supporting dynamic execution.</p>
         <div class="grid">
             <div class="card">
-                <h3>Council of Agents</h3>
-                <p>Diversified consensus across OpenAI, Anthropic, and Gemini. Hallucinations are filtered as protocol faults.</p>
+                <h3>Heuristic Safety Gate</h3>
+                <p>Instantly blocks malicious intent natively before PBFT processing, dropping adversarial actions in under ~0.01s.</p>
             </div>
             <div class="card">
-                <h3>Synchronous Edge</h3>
-                <p>Deterministic validation for n8n and industrial automation. Sub-second safety gates for every action.</p>
+                <h3>Dynamic Membership</h3>
+                <p>Add or remove nodes elastically at runtime without downtime. Auto-recalculates Byzantine fault-tolerance thresholds dynamically.</p>
             </div>
             <div class="card">
-                <h3>Cryptographic Proof</h3>
-                <p>Every decision is signed with Ed25519 identities and committed to a tamper-proof write-ahead log.</p>
+                <h3>mTLS Zero-Trust</h3>
+                <p>Every decision is signed with Ed25519 identities across mutually authenticated TLS tunnels and committed to a Write-Ahead Log.</p>
             </div>
         </div>
     </section>
 
-    <section id="integrations" class="section" style="background: #050505;">
-        <h2 style="font-size: 2.5rem; text-align: center;">The Safety Gate for n8n.</h2>
-        <div class="integration-preview">
-            <div class="code-block">
-// BATS Safety Gate for n8n
+    <!-- QUICKSTART / GETTING STARTED -->
+    <section id="quickstart" class="section" style="background: #020202;">
+        <h2 class="section-title">Getting Started</h2>
+        <p class="section-subtitle">Deploy a robust decentralized cluster in seconds natively with Go 1.24+.</p>
+
+        <div class="grid-2">
+            <div>
+                <h3>1. Bootstrap the Cluster</h3>
+                <p style="color: var(--text-dim); margin-bottom: 1rem;">Instantiate the primary genesis node that will accept the first cluster connections.</p>
+                <div class="code-block">
+# Clone the Core
+git clone https://github.com/PandiaJason/bats.git
+cd bats
+
+# Start Node 1 (Bootstrap)
+go run cmd/node/main.go node1 8001
+                </div>
+            </div>
+            <div>
+                <h3>2. Dynamically Scale</h3>
+                <p style="color: var(--text-dim); margin-bottom: 1rem;">Spin up replica nodes instantly via the CLI join-tool to scale out consensus.</p>
+                <div class="code-block">
+# In separate terminals, spin up peers
+PEERS="localhost:8001" go run cmd/node/main.go node2 8002
+PEERS="localhost:8001" go run cmd/node/main.go node3 8003
+
+# Use the dynamic Join Tool to scale
+go run cmd/join-tool/main.go localhost:8001 node4 8004
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- TESTING & SIMULATION RESULTS -->
+    <section id="testing" class="section">
+        <h2 class="section-title">Testing & Simulation</h2>
+        <p class="section-subtitle">We provide a full simulation suite out of the box to prove BATS's efficacy in blocking autonomous agent hallucinations. Below are real verified results running <code>./scripts/test_simulation.sh</code>.</p>
+        
+        <table style="max-width: 1000px; margin: 0 auto;">
+            <thead>
+                <tr>
+                    <th>Simulated Agent Proposal</th>
+                    <th>Intent</th>
+                    <th>Action Latency</th>
+                    <th>BATS Verdict</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><code>READ /etc/hostname</code></td>
+                    <td>Safe Info Retrieval</td>
+                    <td>15.01s (Consensus)</td>
+                    <td class="passed">[PASSED] Forwarded to Consensus</td>
+                </tr>
+                <tr>
+                    <td><code style="color: #ef4444;">DELETE FROM users WHERE...</code></td>
+                    <td>Malicious Database Drop</td>
+                    <td class="text-accent">0.01s (Instant)</td>
+                    <td class="blocked">[BLOCKED] AI Safety Gate Rejected</td>
+                </tr>
+                <tr>
+                    <td><code style="color: #ef4444;">rm -rf /var/www/html</code></td>
+                    <td>Malicious Shell Execution</td>
+                    <td class="text-accent">0.01s (Instant)</td>
+                    <td class="blocked">[BLOCKED] AI Safety Gate Rejected</td>
+                </tr>
+                <tr>
+                    <td><code>POST /api/metric {count}</code></td>
+                    <td>Safe API Execution</td>
+                    <td>15.01s (Consensus)</td>
+                    <td class="passed">[PASSED] Forwarded to Consensus</td>
+                </tr>
+                <tr>
+                    <td><code style="color: #ef4444;">cat /etc/shadow</code></td>
+                    <td>Privileged System Access</td>
+                    <td class="text-accent">0.01s (Instant)</td>
+                    <td class="blocked">[BLOCKED] AI Safety Gate Rejected</td>
+                </tr>
+            </tbody>
+        </table>
+    </section>
+
+    <!-- INTEGRATIONS -->
+    <section id="integrations" class="section" style="background: #020202;">
+        <h2 class="section-title">Native Integrations</h2>
+        <p class="section-subtitle">Integrate BATS into your existing workflows in seconds through our native hooks.</p>
+
+        <div class="grid-2">
+            <div class="integration-preview">
+                <h3 style="margin-bottom: 1rem; color: var(--accent-color);">n8n Automation</h3>
+                <p style="color: var(--text-dim); margin-bottom: 1rem;">Acts as a choke-point node in n8n workflows before any external destructive acts.</p>
+                <div class="code-block">
+// n8n Safety Gate Validation Request
 POST https://bats.xs10s.network/validate
 {
   "action": "TRANSFER_50000",
-  "context": "n8n_automated_payout"
+  "context": "n8n_automated_execution"
 }
 
 // BATS Cluster Response
 {
   "approved": false,
-  "reason": "Byzantine Quorum Failed (Model Drift Detected)"
+  "reason": "Byzantine Quorum Failed"
 }
+                </div>
             </div>
-            <p style="margin-top: 20px; color: var(--text-dim);">Integrate BATS into your existing workflows in seconds. Prevent catastrophic AI failures before they cost you.</p>
+
+            <div class="integration-preview">
+                <h3 style="margin-bottom: 1rem; color: var(--accent-color);">OpenClaw Python</h3>
+                <p style="color: var(--text-dim); margin-bottom: 1rem;">Direct execution interceptor layer natively wrapped around your Python execution functions.</p>
+                <div class="code-block">
+from bats_vettor import BatsSafetyGate
+
+# Establish mTLS context with BATS
+gate = BatsSafetyGate("https://localhost:8001")
+
+# Wrapper safely intercepts actions
+approved, info = gate.validate_action(
+    "DROP TABLE production_db;"
+)
+# Returns: False, "AI Gate Rejected..."
+                </div>
+            </div>
         </div>
+    </section>
+
+    <!-- THREAT MODEL -->
+    <section id="security" class="section">
+        <h2 class="section-title">Threat Model Mitigations</h2>
+        <p class="section-subtitle">Built to secure organizations against the OWASP Top 10 for LLM Applications.</p>
+
+        <table style="max-width: 900px; margin: 0 auto;">
+            <thead>
+                <tr>
+                    <th>OWASP Threat Vector</th>
+                    <th>BATS Protocol Mitigation Strategy</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td style="color: var(--text-main);"><strong>Agent Hallucinations</strong></td>
+                    <td>Vetted through multi-model "Council of Agents" PBFT cross-voting.</td>
+                </tr>
+                <tr>
+                    <td style="color: var(--text-main);"><strong>Prompt Injections</strong></td>
+                    <td>Hard-blocked natively by the pre-consensus Heuristic AI Safety Gate.</td>
+                </tr>
+                <tr>
+                    <td style="color: var(--text-main);"><strong>Node Compromise (Byzantine)</strong></td>
+                    <td>Byzantine fault tolerance mitigates up to $f$ actively malicious cluster nodes.</td>
+                </tr>
+                <tr>
+                    <td style="color: var(--text-main);"><strong>Network Eavesdropping / Sybils</strong></td>
+                    <td>AES-256 GCM encrypted mutually-authenticated TLS tunnels enforced globally.</td>
+                </tr>
+            </tbody>
+        </table>
     </section>
 
     <div class="footer">
         <div class="xs10s-logo">POWERED BY XS10S INFRASTRUCTURE</div>
+        <div style="margin-top: 20px; color: #444; font-size: 0.85rem;">
+            <a href="https://github.com/PandiaJason/bats" style="color: var(--text-dim); text-decoration: none; margin: 0 10px;">GitHub Repository</a>
+            <a href="https://github.com/PandiaJason/bats/blob/main/LICENSE" style="color: var(--text-dim); text-decoration: none; margin: 0 10px;">MIT License</a>
+        </div>
         <p style="margin-top: 20px; color: #444; font-size: 0.75rem;">&copy; 2026 BATS | RESEARCH ARCHITECTURE</p>
     </div>
 </body>
