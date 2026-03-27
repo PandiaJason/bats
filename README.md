@@ -17,6 +17,11 @@
 
 ---
 
+## Why BATS?
+In the AI era, the standard approach to autonomous multi-agent orchestration has been either blind trust or frail, centralized API wrappers—leaving critical infrastructure dangerously vulnerable to silent LLM hallucinations and malicious prompt injections. BATS solves this by acting as a decentralized, zero-trust proxy that forces every AI-proposed action to pass a rigid heuristic safety gate and achieve multi-node Byzantine quorum verification before execution, establishing a mathematically sound and tamper-proof new standard for unconditionally secure enterprise AI automation.
+
+---
+
 ## Overview
 
 **BATS (Byzantine Agent Trust System)** is a zero-trust, consensus-driven safety layer for AI and autonomous agent workflows. Developed by **Xs10s**, BATS acts as an immutable *Integrity Layer* between non-deterministic AI outputs (e.g., GPT-4, Claude, Gemini) and your critical production infrastructure. 
