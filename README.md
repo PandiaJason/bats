@@ -126,9 +126,24 @@ BATS completely intercepts Python-driven workflows. Wrap your agent outputs usin
 - **SDK Path**: `integrations/openclaw-wrapper/bats_vettor.py`
 - Setup: Initializes a robust HTTPS connection with the cluster using the root CA bundle.
 
-#### 2. n8n Automation
+### 2. n8n Automation
 BATS comes with a dedicated node template for n8n to act as a choke-point before crucial orchestration steps.
 - **Node Path**: `integrations/n8n-node/`
+
+---
+
+## The Gauntlet CLI
+
+The `bats` CLI includes a high-tier adversarial testing suite ("The Gauntlet") to verify cluster resilience against active Byzantine threats.
+
+```bash
+# Running the Xs10s Adversarial Gauntlet...
+> bats-cli gauntlet --target=./swarm_config.json --f=1
+
+[DETECTED] Node_4 attempted Payload Mutation (ASI03) -> [BLOCKED]
+[DETECTED] Node_2 attempted Replay Attack (ASI07)    -> [BLOCKED]
+[RESULT]   System Resilience Score: 100% (no successful adversarial commits)
+```
 
 ---
 
