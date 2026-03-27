@@ -6,7 +6,7 @@ import ssl
 class BatsSafetyGate:
     def __init__(self, endpoint="https://localhost:8001/validate"):
         self.endpoint = endpoint
-        # 🔐 In a production/enterprise setting, we'd load the CA cert.
+        # [SEC] In a production/enterprise setting, we'd load the CA cert.
         # For local research and verification, we disable SSL verification.
         self.ssl_context = ssl._create_unverified_context()
 
@@ -24,11 +24,17 @@ class BatsSafetyGate:
                 method="POST"
             )
             
-            with urllib.request.urlopen(req, context=self.ssl_context, timeout=5) as response:
-                data = json.loads(response.read().decode("utf-8"))
+            with urllib.request.urlopen(req, context=self.ssl_context, timeout=15) as response:
+                raw = response.read()
+                print("RAW RESPONSE:", raw)
+                data = json.loads(raw.decode("utf-8"))
                 if data.get("approved"):
                     return True, data.get("digest")
                 return False, data.get("reason", "Consensus Rejected")
+        except urllib.error.HTTPError as e:
+            err_body = e.read()
+            print(f"HTTP ERROR {e.code}: {err_body}")
+            return False, f"BATS_HTTP_ERROR: {e.code} {err_body}"
         except urllib.error.URLError as e:
             return False, f"BATS_UNREACHABLE: {str(e)}"
         except Exception as e:
@@ -40,8 +46,8 @@ class BatsSafetyGate:
         """
         approved, info = self.validate_action(action)
         if approved:
-            print(f"[BATS] ✅ Action Approved. Digest: {info}")
+            print(f"[BATS] [APPROVED] Action Approved. Digest: {info}")
             return execution_fn(action)
         else:
-            print(f"[BATS] ❌ ACTION BLOCKED: {info}")
+            print(f"[BATS] [BLOCKED] ACTION BLOCKED: {info}")
             return {"error": "BATS_SAFETY_VIOLATION", "details": info}

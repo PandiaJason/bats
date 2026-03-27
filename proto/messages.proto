@@ -10,6 +10,8 @@ enum MessageType {
     COMMIT      = 2;
     VIEW_CHANGE = 3;
     NEW_VIEW    = 4;
+    JOIN_REQUEST = 5;
+    JOIN_RESPONSE = 6;
 }
 
 message ConsensusMessage {
@@ -43,4 +45,21 @@ message Envelope {
     Header header = 1;
     bytes payload = 2;
     bytes signature = 3;
+}
+
+message MembershipJoinRequest {
+    string id = 1;
+    string port = 2;
+    bytes public_key = 3;
+}
+
+message MembershipJoinResponse {
+    bool approved = 1;
+    repeated NodeStatus nodes = 2;
+    uint64 current_view = 3;
+    uint32 f = 4;
+}
+
+message ClusterUpdate {
+    NodeStatus new_node = 1;
 }

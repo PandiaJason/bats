@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strings"
 )
 
 type Provider interface {
@@ -17,7 +18,7 @@ type OpenAIProvider struct{ Model string }
 func (p *OpenAIProvider) Name() string { return "OpenAI (" + p.Model + ")" }
 func (p *OpenAIProvider) Query(prompt string) (string, error) {
 	apiKey := os.Getenv("OPENAI_API_KEY")
-	if apiKey == "" { return "BATS: Consensus reached for prompt: " + prompt, nil }
+	if apiKey == "" { return mockSafetyEval(prompt), nil }
 	
 	url := "https://api.openai.com/v1/chat/completions"
 	payload := map[string]interface{}{
@@ -31,7 +32,7 @@ type AnthropicProvider struct{ Model string }
 func (p *AnthropicProvider) Name() string { return "Anthropic (" + p.Model + ")" }
 func (p *AnthropicProvider) Query(prompt string) (string, error) {
 	apiKey := os.Getenv("ANTHROPIC_API_KEY")
-	if apiKey == "" { return "BATS: Consensus reached for prompt: " + prompt, nil }
+	if apiKey == "" { return mockSafetyEval(prompt), nil }
 
 	url := "https://api.anthropic.com/v1/messages"
 	payload := map[string]interface{}{
@@ -47,7 +48,7 @@ type GoogleProvider struct{ Model string }
 func (p *GoogleProvider) Name() string { return "Google (" + p.Model + ")" }
 func (p *GoogleProvider) Query(prompt string) (string, error) {
 	apiKey := os.Getenv("GOOGLE_API_KEY")
-	if apiKey == "" { return "BATS: Consensus reached for prompt: " + prompt, nil }
+	if apiKey == "" { return mockSafetyEval(prompt), nil }
 
 	url := fmt.Sprintf("https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent?key=%s", p.Model, apiKey)
 	payload := map[string]interface{}{
@@ -56,6 +57,14 @@ func (p *GoogleProvider) Query(prompt string) (string, error) {
 		},
 	}
 	return postGoogle(url, payload)
+}
+
+func mockSafetyEval(prompt string) string {
+	lower := strings.ToLower(prompt)
+	if strings.Contains(lower, "delete") || strings.Contains(lower, "drop") || strings.Contains(lower, "rm -rf") || strings.Contains(lower, "shadow") {
+		return "UNSAFE: Malicious intent detected"
+	}
+	return "SAFE: Action approved"
 }
 
 func postJSON(url, auth string, payload interface{}) (string, error) {

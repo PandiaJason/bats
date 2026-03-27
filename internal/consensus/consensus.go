@@ -10,6 +10,7 @@ import (
 	"bats/internal/storage"
 	"bats/internal/types"
 	"google.golang.org/protobuf/proto"
+	"sort"
 	"time"
 )
 
@@ -39,9 +40,8 @@ type Consensus struct {
 
 func New(id string, peers []string, f int, wal *storage.WAL, priv []byte, pubs map[string][]byte, net *network.Client, onCommit func([64]byte)) *Consensus {
 	weights := make(map[string]int)
-	weights[id] = 1
-	for _, p := range peers {
-		weights[p] = 1
+	for peerID := range pubs {
+		weights[peerID] = 1
 	}
 
 	return &Consensus{
@@ -56,21 +56,52 @@ func New(id string, peers []string, f int, wal *storage.WAL, priv []byte, pubs m
 		PrivateKey:      priv,
 		PublicKeys:      pubs,
 		Network:         net,
-		timer:           time.NewTimer(5 * time.Second),
+		timer:           time.NewTimer(500 * time.Second),
 		OnCommit:        onCommit,
 	}
 }
 
+func (c *Consensus) RecalculateF() {
+	// N = Len(PublicKeys)
+	n := len(c.PublicKeys)
+	c.F = (n - 1) / 3
+}
+
+func (c *Consensus) AddPeer(id string, pub []byte) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+ 
+	if _, ok := c.PublicKeys[id]; ok {
+		return
+	}
+ 
+	c.PublicKeys[id] = pub
+	c.Weights[id] = 1
+	if id != c.ID {
+		c.Peers = append(c.Peers, id)
+	}
+	c.RecalculateF()
+	fmt.Printf("🛡️ Node %s: Membership Updated. Total Nodes:%d, F:%d\n", c.ID, len(c.PublicKeys), c.F)
+}
+
+func (c *Consensus) GetPeers() []string {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	p := make([]string, len(c.Peers))
+	copy(p, c.Peers)
+	return p
+}
+
 func (c *Consensus) GetLeader() string {
-	allNodes := append([]string{c.ID}, c.Peers...)
-	// In a real system, we'd sort these or use a consistent order
-	// For now, let's just use the View to pick a node.
-	// To make it weighted, we'd sum weights and pick based on cumulative weight.
-	
+	// 🔑 Leadership determinism: Sort all known nodes
+	var allNodes []string
 	totalWeight := 0
-	for _, w := range c.Weights {
+	for id, w := range c.Weights {
+		allNodes = append(allNodes, id)
 		totalWeight += w
 	}
+	// Sort to ensure all nodes pick the same leader for the same view
+	sort.Strings(allNodes)
 	
 	target := int(c.View) % totalWeight
 	current := 0
@@ -84,7 +115,10 @@ func (c *Consensus) GetLeader() string {
 }
 
 func (c *Consensus) IsLeader() bool {
-	return c.GetLeader() == c.ID
+	leader := c.GetLeader()
+	// DEBUG
+	fmt.Printf("[DEBUG] IsLeader check: c.ID=%s, c.GetLeader()=%s\n", c.ID, leader)
+	return leader == c.ID
 }
 
 func (c *Consensus) Start(digest [64]byte) {
@@ -106,9 +140,10 @@ func (c *Consensus) Start(digest [64]byte) {
 
 	// 🔐 Digital Signature for authenticating the PrePrepare message
 	c.sign(msg)
+	peers := c.GetPeers()
 	c.mu.Unlock() // Unlock before broadcasting/local handle
 	
-	c.Network.Broadcast(c.Peers, msg)
+	c.Network.Broadcast(peers, msg)
 	
 	// 🏠 Local processing: Leader also "handles" its own PrePrepare
 	c.Handle(msg)
@@ -127,8 +162,9 @@ func (c *Consensus) Heartbeat() {
 		NodeId: c.ID,
 	}
 	c.sign(msg)
+	peers := c.GetPeers()
 	c.mu.Unlock()
-	c.Network.Broadcast(c.Peers, msg)
+	c.Network.Broadcast(peers, msg)
 }
 
 func (c *Consensus) sign(msg *types.ConsensusMessage) {
@@ -204,8 +240,9 @@ func (c *Consensus) Handle(msg *types.ConsensusMessage) {
 				NodeId: c.ID,
 			}
 			c.sign(commit)
+			peers := c.GetPeers()
 			c.mu.Unlock() // Explicit unlock
-			c.Network.Broadcast(c.Peers, commit)
+			c.Network.Broadcast(peers, commit)
 			return // Return after broadcasting commit and unlocking
 		}
 		c.mu.Unlock() // Explicit unlock if not broadcasting commit
@@ -260,7 +297,7 @@ func (c *Consensus) resetTimer() {
 		default:
 		}
 	}
-	c.timer.Reset(5 * time.Second)
+	c.timer.Reset(500 * time.Second)
 }
 
 func (c *Consensus) Monitor() {
@@ -279,7 +316,8 @@ func (c *Consensus) Monitor() {
 				NodeId: c.ID,
 			}
 			c.sign(msg)
-			c.Network.Broadcast(c.Peers, msg)
+			peers := c.GetPeers()
+			c.Network.Broadcast(peers, msg)
 			c.mu.Unlock() // Unlock after view change logic
 		}
 		c.resetTimer() // Reset timer regardless of leader status or view change

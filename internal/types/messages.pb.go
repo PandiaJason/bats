@@ -24,11 +24,13 @@ const (
 type MessageType int32
 
 const (
-	MessageType_PREPREPARE  MessageType = 0
-	MessageType_PREPARE     MessageType = 1
-	MessageType_COMMIT      MessageType = 2
-	MessageType_VIEW_CHANGE MessageType = 3
-	MessageType_NEW_VIEW    MessageType = 4
+	MessageType_PREPREPARE    MessageType = 0
+	MessageType_PREPARE       MessageType = 1
+	MessageType_COMMIT        MessageType = 2
+	MessageType_VIEW_CHANGE   MessageType = 3
+	MessageType_NEW_VIEW      MessageType = 4
+	MessageType_JOIN_REQUEST  MessageType = 5
+	MessageType_JOIN_RESPONSE MessageType = 6
 )
 
 // Enum value maps for MessageType.
@@ -39,13 +41,17 @@ var (
 		2: "COMMIT",
 		3: "VIEW_CHANGE",
 		4: "NEW_VIEW",
+		5: "JOIN_REQUEST",
+		6: "JOIN_RESPONSE",
 	}
 	MessageType_value = map[string]int32{
-		"PREPREPARE":  0,
-		"PREPARE":     1,
-		"COMMIT":      2,
-		"VIEW_CHANGE": 3,
-		"NEW_VIEW":    4,
+		"PREPREPARE":    0,
+		"PREPARE":       1,
+		"COMMIT":        2,
+		"VIEW_CHANGE":   3,
+		"NEW_VIEW":      4,
+		"JOIN_REQUEST":  5,
+		"JOIN_RESPONSE": 6,
 	}
 )
 
@@ -373,6 +379,178 @@ func (x *Envelope) GetSignature() []byte {
 	return nil
 }
 
+type MembershipJoinRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Port          string                 `protobuf:"bytes,2,opt,name=port,proto3" json:"port,omitempty"`
+	PublicKey     []byte                 `protobuf:"bytes,3,opt,name=public_key,json=publicKey,proto3" json:"public_key,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *MembershipJoinRequest) Reset() {
+	*x = MembershipJoinRequest{}
+	mi := &file_proto_messages_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *MembershipJoinRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*MembershipJoinRequest) ProtoMessage() {}
+
+func (x *MembershipJoinRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_messages_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use MembershipJoinRequest.ProtoReflect.Descriptor instead.
+func (*MembershipJoinRequest) Descriptor() ([]byte, []int) {
+	return file_proto_messages_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *MembershipJoinRequest) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *MembershipJoinRequest) GetPort() string {
+	if x != nil {
+		return x.Port
+	}
+	return ""
+}
+
+func (x *MembershipJoinRequest) GetPublicKey() []byte {
+	if x != nil {
+		return x.PublicKey
+	}
+	return nil
+}
+
+type MembershipJoinResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Approved      bool                   `protobuf:"varint,1,opt,name=approved,proto3" json:"approved,omitempty"`
+	Nodes         []*NodeStatus          `protobuf:"bytes,2,rep,name=nodes,proto3" json:"nodes,omitempty"`
+	CurrentView   uint64                 `protobuf:"varint,3,opt,name=current_view,json=currentView,proto3" json:"current_view,omitempty"`
+	F             uint32                 `protobuf:"varint,4,opt,name=f,proto3" json:"f,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *MembershipJoinResponse) Reset() {
+	*x = MembershipJoinResponse{}
+	mi := &file_proto_messages_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *MembershipJoinResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*MembershipJoinResponse) ProtoMessage() {}
+
+func (x *MembershipJoinResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_messages_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use MembershipJoinResponse.ProtoReflect.Descriptor instead.
+func (*MembershipJoinResponse) Descriptor() ([]byte, []int) {
+	return file_proto_messages_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *MembershipJoinResponse) GetApproved() bool {
+	if x != nil {
+		return x.Approved
+	}
+	return false
+}
+
+func (x *MembershipJoinResponse) GetNodes() []*NodeStatus {
+	if x != nil {
+		return x.Nodes
+	}
+	return nil
+}
+
+func (x *MembershipJoinResponse) GetCurrentView() uint64 {
+	if x != nil {
+		return x.CurrentView
+	}
+	return 0
+}
+
+func (x *MembershipJoinResponse) GetF() uint32 {
+	if x != nil {
+		return x.F
+	}
+	return 0
+}
+
+type ClusterUpdate struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	NewNode       *NodeStatus            `protobuf:"bytes,1,opt,name=new_node,json=newNode,proto3" json:"new_node,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ClusterUpdate) Reset() {
+	*x = ClusterUpdate{}
+	mi := &file_proto_messages_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ClusterUpdate) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ClusterUpdate) ProtoMessage() {}
+
+func (x *ClusterUpdate) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_messages_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ClusterUpdate.ProtoReflect.Descriptor instead.
+func (*ClusterUpdate) Descriptor() ([]byte, []int) {
+	return file_proto_messages_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *ClusterUpdate) GetNewNode() *NodeStatus {
+	if x != nil {
+		return x.NewNode
+	}
+	return nil
+}
+
 var File_proto_messages_proto protoreflect.FileDescriptor
 
 const file_proto_messages_proto_rawDesc = "" +
@@ -402,7 +580,19 @@ const file_proto_messages_proto_rawDesc = "" +
 	"\bEnvelope\x12%\n" +
 	"\x06header\x18\x01 \x01(\v2\r.types.HeaderR\x06header\x12\x18\n" +
 	"\apayload\x18\x02 \x01(\fR\apayload\x12\x1c\n" +
-	"\tsignature\x18\x03 \x01(\fR\tsignature*U\n" +
+	"\tsignature\x18\x03 \x01(\fR\tsignature\"Z\n" +
+	"\x15MembershipJoinRequest\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
+	"\x04port\x18\x02 \x01(\tR\x04port\x12\x1d\n" +
+	"\n" +
+	"public_key\x18\x03 \x01(\fR\tpublicKey\"\x8e\x01\n" +
+	"\x16MembershipJoinResponse\x12\x1a\n" +
+	"\bapproved\x18\x01 \x01(\bR\bapproved\x12'\n" +
+	"\x05nodes\x18\x02 \x03(\v2\x11.types.NodeStatusR\x05nodes\x12!\n" +
+	"\fcurrent_view\x18\x03 \x01(\x04R\vcurrentView\x12\f\n" +
+	"\x01f\x18\x04 \x01(\rR\x01f\"=\n" +
+	"\rClusterUpdate\x12,\n" +
+	"\bnew_node\x18\x01 \x01(\v2\x11.types.NodeStatusR\anewNode*z\n" +
 	"\vMessageType\x12\x0e\n" +
 	"\n" +
 	"PREPREPARE\x10\x00\x12\v\n" +
@@ -410,7 +600,9 @@ const file_proto_messages_proto_rawDesc = "" +
 	"\n" +
 	"\x06COMMIT\x10\x02\x12\x0f\n" +
 	"\vVIEW_CHANGE\x10\x03\x12\f\n" +
-	"\bNEW_VIEW\x10\x04B\x15Z\x13bats/internal/typesb\x06proto3"
+	"\bNEW_VIEW\x10\x04\x12\x10\n" +
+	"\fJOIN_REQUEST\x10\x05\x12\x11\n" +
+	"\rJOIN_RESPONSE\x10\x06B\x15Z\x13bats/internal/typesb\x06proto3"
 
 var (
 	file_proto_messages_proto_rawDescOnce sync.Once
@@ -425,23 +617,28 @@ func file_proto_messages_proto_rawDescGZIP() []byte {
 }
 
 var file_proto_messages_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_proto_messages_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
+var file_proto_messages_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
 var file_proto_messages_proto_goTypes = []any{
-	(MessageType)(0),         // 0: types.MessageType
-	(*ConsensusMessage)(nil), // 1: types.ConsensusMessage
-	(*NodeStatus)(nil),       // 2: types.NodeStatus
-	(*Header)(nil),           // 3: types.Header
-	(*Envelope)(nil),         // 4: types.Envelope
+	(MessageType)(0),               // 0: types.MessageType
+	(*ConsensusMessage)(nil),       // 1: types.ConsensusMessage
+	(*NodeStatus)(nil),             // 2: types.NodeStatus
+	(*Header)(nil),                 // 3: types.Header
+	(*Envelope)(nil),               // 4: types.Envelope
+	(*MembershipJoinRequest)(nil),  // 5: types.MembershipJoinRequest
+	(*MembershipJoinResponse)(nil), // 6: types.MembershipJoinResponse
+	(*ClusterUpdate)(nil),          // 7: types.ClusterUpdate
 }
 var file_proto_messages_proto_depIdxs = []int32{
 	0, // 0: types.ConsensusMessage.type:type_name -> types.MessageType
 	1, // 1: types.ConsensusMessage.pre_prepares:type_name -> types.ConsensusMessage
 	3, // 2: types.Envelope.header:type_name -> types.Header
-	3, // [3:3] is the sub-list for method output_type
-	3, // [3:3] is the sub-list for method input_type
-	3, // [3:3] is the sub-list for extension type_name
-	3, // [3:3] is the sub-list for extension extendee
-	0, // [0:3] is the sub-list for field type_name
+	2, // 3: types.MembershipJoinResponse.nodes:type_name -> types.NodeStatus
+	2, // 4: types.ClusterUpdate.new_node:type_name -> types.NodeStatus
+	5, // [5:5] is the sub-list for method output_type
+	5, // [5:5] is the sub-list for method input_type
+	5, // [5:5] is the sub-list for extension type_name
+	5, // [5:5] is the sub-list for extension extendee
+	0, // [0:5] is the sub-list for field type_name
 }
 
 func init() { file_proto_messages_proto_init() }
@@ -455,7 +652,7 @@ func file_proto_messages_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_messages_proto_rawDesc), len(file_proto_messages_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   4,
+			NumMessages:   7,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
