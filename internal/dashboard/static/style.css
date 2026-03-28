@@ -1,0 +1,99 @@
+:root {
+    --primary: #bb86fc;
+    --secondary: #03dac6;
+    --background: #121212;
+    --surface: #1e1e1e;
+    --on-surface: #ffffff;
+    --error: #cf6679;
+}
+
+body {
+    margin: 0;
+    font-family: 'Inter', sans-serif;
+    background-color: var(--background);
+    color: var(--on-surface);
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+header {
+    text-align: center;
+    margin-bottom: 3rem;
+}
+
+header h1 {
+    font-size: 2.5rem;
+    margin-bottom: 0.5rem;
+    color: var(--primary);
+}
+
+header p {
+    color: #888;
+}
+
+#cluster-summary {
+    display: flex;
+    gap: 2rem;
+    margin-bottom: 3rem;
+}
+
+.card {
+    background: var(--surface);
+    padding: 1.5rem;
+    border-radius: 12px;
+    flex: 1;
+    text-align: center;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+}
+
+.card h3 {
+    margin-top: 0;
+    color: #aaa;
+    font-weight: 400;
+}
+
+.card .value {
+    font-size: 2rem;
+    font-weight: bold;
+    color: var(--secondary);
+}
+
+#node-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 2rem;
+}
+
+.node-card {
+    background: var(--surface);
+    padding: 1.5rem;
+    border-radius: 12px;
+    border-top: 4px solid var(--error);
+    transition: transform 0.2s;
+}
+
+.node-card.alive {
+    border-top-color: var(--secondary);
+}
+
+.node-card h4 {
+    margin-top: 0;
+}
+
+.status-badge {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    background: rgba(207, 102, 121, 0.2);
+    color: var(--error);
+}
+
+.alive .status-badge {
+    background: rgba(3, 218, 198, 0.2);
+    color: var(--secondary);
+}

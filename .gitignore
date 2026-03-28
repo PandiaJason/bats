@@ -1,8 +1,8 @@
 # Binary files
-node
-dashboard
-bats
-audit
+/node
+/dashboard
+/bats
+/audit
 
 # Logs
 *.log
