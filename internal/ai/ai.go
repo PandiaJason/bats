@@ -64,6 +64,9 @@ func mockSafetyEval(prompt string) string {
 	if strings.Contains(lower, "delete") || strings.Contains(lower, "drop") || strings.Contains(lower, "rm -rf") || strings.Contains(lower, "shadow") {
 		return "UNSAFE: Malicious intent detected"
 	}
+	if strings.Contains(lower, "read") || strings.Contains(lower, "get") || strings.Contains(lower, "list") || strings.Contains(lower, "fetch") {
+		return "[SAFE_READ]: Non-mutating information retrieval"
+	}
 	return "SAFE: Action approved"
 }
 
