@@ -3,521 +3,561 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BATS | The AI Safety Layer by Xs10s</title>
+    <title>BATS — Byzantine Agent Trust System | Zero-Trust AI Safety Layer</title>
+    <meta name="description" content="BATS is a zero-trust consensus-driven safety layer for autonomous AI agents. Sub-millisecond reads, 6.5ms PBFT writes, Byzantine fault tolerance.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-color: #050505;
-            --accent-color: #8b5cf6;
-            --secondary-accent: #3b82f6;
-            --text-main: #f8fafc;
+            --bg: #06080f;
+            --surface: #0c1018;
+            --surface-2: #111827;
+            --border: rgba(255,255,255,0.06);
+            --border-hover: rgba(139,92,246,0.4);
+            --text: #f1f5f9;
             --text-dim: #94a3b8;
-            --glass-bg: rgba(255, 255, 255, 0.03);
-            --glass-border: rgba(255, 255, 255, 0.1);
-            --danger-color: #ef4444;
-            --success-color: #22c55e;
+            --text-muted: #64748b;
+            --accent: #8b5cf6;
+            --accent-glow: rgba(139,92,246,0.15);
+            --blue: #3b82f6;
+            --green: #10b981;
+            --red: #ef4444;
+            --amber: #f59e0b;
+            --cyan: #06b6d4;
         }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        body { background: var(--bg); color: var(--text); font-family: 'Inter', system-ui, sans-serif; line-height: 1.7; overflow-x: hidden; transition: background 0.3s, color 0.3s; }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        /* ─── Light Theme ─── */
+        [data-theme="light"] {
+            --bg: #f8fafc;
+            --surface: #ffffff;
+            --surface-2: #f1f5f9;
+            --border: rgba(0,0,0,0.08);
+            --border-hover: rgba(139,92,246,0.4);
+            --text: #0f172a;
+            --text-dim: #475569;
+            --text-muted: #94a3b8;
+            --accent: #7c3aed;
+            --accent-glow: rgba(124,58,237,0.08);
         }
+        [data-theme="light"] .bg-hero { opacity: 0.15; }
+        [data-theme="light"] .code-block { background: #f1f5f9; border-color: rgba(0,0,0,0.08); color: #334155; }
+        [data-theme="light"] .code-block .comment { color: #94a3b8; }
+        [data-theme="light"] .code-block .cmd { color: #059669; }
+        [data-theme="light"] nav { background: rgba(248,250,252,0.9); }
+        [data-theme="light"] .hero h1 { background: linear-gradient(180deg, #0f172a 30%, rgba(15,23,42,0.5)); -webkit-background-clip: text; background-clip: text; }
+        [data-theme="light"] .feature-icon svg, [data-theme="light"] .threat-icon svg { opacity: 0.85; }
 
-        body {
-            background: var(--bg-color);
-            color: var(--text-main);
-            font-family: 'Outfit', sans-serif;
-            overflow-x: hidden;
-            line-height: 1.6;
-        }
-
-        .hero-bg {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: -1;
-            background: linear-gradient(rgba(5, 5, 5, 0.7), rgba(5, 5, 5, 0.9)), url('hero-bg.png');
+        /* ─── Background Image ─── */
+        .bg-hero {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0;
+            background: linear-gradient(180deg, rgba(6,8,15,0.6) 0%, rgba(6,8,15,0.85) 50%, rgba(6,8,15,0.98) 100%),
+                        url('hero-bg.png');
             background-size: cover;
             background-position: center;
-            opacity: 0.8;
         }
+        .bg-glow {
+            position: fixed; width: 600px; height: 600px; border-radius: 50%;
+            background: radial-gradient(circle, rgba(139,92,246,0.1), transparent 70%);
+            top: -200px; left: 50%; transform: translateX(-50%);
+            z-index: 0; pointer-events: none;
+            animation: float 8s ease-in-out infinite;
+        }
+        @keyframes float { 0%,100% { transform: translateX(-50%) translateY(0); } 50% { transform: translateX(-50%) translateY(20px); } }
 
+        /* ─── Layout ─── */
+        .container { max-width: 1200px; margin: 0 auto; padding: 0 24px; position: relative; z-index: 1; }
+
+        /* ─── Nav ─── */
         nav {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 2rem 10%;
-            position: absolute;
-            width: 100%;
-            top: 0;
-            z-index: 10;
+            position: fixed; top: 0; width: 100%; z-index: 100;
+            background: rgba(6,8,15,0.85); backdrop-filter: blur(20px) saturate(180%);
+            border-bottom: 1px solid var(--border);
+        }
+        .nav-inner { display: flex; justify-content: space-between; align-items: center; padding: 16px 24px; max-width: 1200px; margin: 0 auto; }
+        .nav-brand { font-weight: 800; font-size: 18px; letter-spacing: 1.5px; display: flex; align-items: center; gap: 8px; }
+        .nav-brand .dot { color: var(--accent); }
+        .nav-links { display: flex; gap: 32px; align-items: center; }
+        .nav-links a { color: var(--text-muted); text-decoration: none; font-size: 13px; font-weight: 500; letter-spacing: 0.5px; transition: color 0.2s; }
+        .nav-links a:hover { color: var(--text); }
+        .nav-github { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; color: var(--text) !important; font-size: 13px !important; transition: border-color 0.2s, background 0.2s; }
+        .nav-github:hover { border-color: var(--border-hover); background: rgba(139,92,246,0.08); }
+        .nav-github svg { width: 16px; height: 16px; fill: currentColor; }
+        .theme-toggle { background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; cursor: pointer; color: var(--text); display: inline-flex; align-items: center; transition: border-color 0.2s; }
+        .theme-toggle:hover { border-color: var(--border-hover); }
+        .theme-toggle svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+        /* ─── Hero ─── */
+        .hero { padding: 180px 0 120px; text-align: center; }
+        .hero-version {
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 6px 16px; border-radius: 100px; font-size: 12px; font-weight: 600;
+            letter-spacing: 1px; color: var(--accent); margin-bottom: 32px;
+            background: var(--accent-glow); border: 1px solid rgba(139,92,246,0.2);
+        }
+        .hero-version .pulse { width: 6px; height: 6px; border-radius: 50%; background: var(--green); animation: pulse 2s infinite; }
+        @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+        .hero h1 { font-size: clamp(42px, 6vw, 72px); font-weight: 800; line-height: 1.05; max-width: 800px; margin: 0 auto 24px; letter-spacing: -2px; background: linear-gradient(180deg, #fff 30%, rgba(255,255,255,0.4)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+        .hero-sub { font-size: 18px; color: var(--text-dim); max-width: 560px; margin: 0 auto 48px; line-height: 1.7; }
+        .hero-cta { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+        .btn { padding: 14px 28px; border-radius: 10px; font-weight: 600; font-size: 14px; text-decoration: none; transition: all 0.2s; cursor: pointer; border: none; display: inline-flex; align-items: center; gap: 8px; }
+        .btn-primary { background: var(--accent); color: #fff; box-shadow: 0 0 24px rgba(139,92,246,0.3), inset 0 1px 0 rgba(255,255,255,0.15); }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 0 40px rgba(139,92,246,0.5), inset 0 1px 0 rgba(255,255,255,0.15); }
+        .btn-ghost { background: transparent; color: var(--text); border: 1px solid var(--border); }
+        .btn-ghost:hover { border-color: var(--border-hover); background: var(--accent-glow); }
+
+        /* ─── Stats Bar ─── */
+        .stats-bar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--border); border-radius: 16px; overflow: hidden; margin: 80px auto 0; max-width: 900px; }
+        .stat { background: var(--surface); padding: 28px; text-align: center; }
+        .stat-value { font-family: 'JetBrains Mono', monospace; font-size: 28px; font-weight: 700; color: var(--accent); }
+        .stat-value.green { color: var(--green); }
+        .stat-value.cyan { color: var(--cyan); }
+        .stat-value.amber { color: var(--amber); }
+        .stat-label { font-size: 12px; color: var(--text-muted); margin-top: 6px; letter-spacing: 0.5px; text-transform: uppercase; }
+
+        /* ─── Sections ─── */
+        .section { padding: 120px 0; }
+        .section-label { font-size: 12px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; color: var(--accent); margin-bottom: 12px; }
+        .section-title { font-size: clamp(28px, 4vw, 40px); font-weight: 700; letter-spacing: -1px; margin-bottom: 16px; }
+        .section-desc { color: var(--text-dim); max-width: 600px; font-size: 16px; margin-bottom: 48px; }
+        .section-desc.center { text-align: center; margin-left: auto; margin-right: auto; }
+
+        /* ─── Feature Cards ─── */
+        .features-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+        .feature-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 32px; transition: border-color 0.3s, transform 0.3s; }
+        .feature-card:hover { border-color: var(--border-hover); transform: translateY(-4px); }
+        .feature-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-bottom: 20px; }
+        .feature-icon svg { width: 20px; height: 20px; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; fill: none; }
+        .feature-icon.purple { background: rgba(139,92,246,0.12); }
+        .feature-icon.purple svg { stroke: var(--accent); }
+        .feature-icon.blue { background: rgba(59,130,246,0.12); }
+        .feature-icon.blue svg { stroke: var(--blue); }
+        .feature-icon.green { background: rgba(16,185,129,0.12); }
+        .feature-icon.green svg { stroke: var(--green); }
+        .feature-icon.red { background: rgba(239,68,68,0.12); }
+        .feature-icon.red svg { stroke: var(--red); }
+        .feature-icon.cyan { background: rgba(6,182,212,0.12); }
+        .feature-icon.cyan svg { stroke: var(--cyan); }
+        .feature-icon.amber { background: rgba(245,158,11,0.12); }
+        .feature-icon.amber svg { stroke: var(--amber); }
+        .feature-card h3 { font-size: 16px; font-weight: 600; margin-bottom: 8px; }
+        .feature-card p { font-size: 14px; color: var(--text-dim); line-height: 1.6; }
+
+        /* ─── Architecture ─── */
+        .arch-flow { display: flex; align-items: center; gap: 0; justify-content: center; flex-wrap: wrap; margin-top: 48px; }
+        .arch-step { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px 24px; text-align: center; min-width: 160px; }
+        .arch-step .step-num { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--accent); margin-bottom: 6px; font-weight: 700; }
+        .arch-step h4 { font-size: 14px; margin-bottom: 4px; }
+        .arch-step p { font-size: 12px; color: var(--text-muted); }
+        .arch-arrow { color: var(--text-muted); font-size: 20px; margin: 0 8px; }
+
+        /* ─── Benchmark ─── */
+        .bench-table { width: 100%; border-collapse: collapse; background: var(--surface); border-radius: 12px; overflow: hidden; border: 1px solid var(--border); }
+        .bench-table th, .bench-table td { padding: 16px 24px; text-align: left; border-bottom: 1px solid var(--border); font-size: 14px; }
+        .bench-table th { background: rgba(255,255,255,0.03); color: var(--text-muted); font-size: 12px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; }
+        .bench-table td { font-family: 'JetBrains Mono', monospace; font-size: 13px; }
+        .bench-table td:first-child { font-family: 'Inter', sans-serif; font-weight: 500; color: var(--text); }
+        .bench-table tr:last-child td { border-bottom: none; }
+        .val-green { color: var(--green); font-weight: 600; }
+        .val-blue { color: var(--blue); font-weight: 600; }
+        .val-red { color: var(--red); font-weight: 600; }
+
+        /* ─── Code Block ─── */
+        .code-block { background: rgba(0,0,0,0.4); border: 1px solid var(--border); border-radius: 12px; padding: 24px; font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #d1d5db; overflow-x: auto; line-height: 1.8; }
+        .code-block .comment { color: var(--text-muted); }
+        .code-block .cmd { color: var(--green); }
+        .code-block .flag { color: var(--accent); }
+
+        /* ─── Quickstart Grid ─── */
+        .qs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+        .qs-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 32px; }
+        .qs-card .qs-num { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--accent); font-weight: 700; margin-bottom: 12px; }
+        .qs-card h3 { font-size: 18px; margin-bottom: 8px; }
+        .qs-card p { font-size: 14px; color: var(--text-dim); margin-bottom: 16px; }
+
+        /* ─── Threat Table ─── */
+        .threat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .threat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 24px; display: flex; gap: 16px; align-items: flex-start; }
+        .threat-card .threat-icon { width: 36px; height: 36px; border-radius: 8px; background: rgba(239,68,68,0.1); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .threat-card .threat-icon svg { width: 18px; height: 18px; stroke: var(--red); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+        .threat-card h4 { font-size: 14px; margin-bottom: 4px; }
+        .threat-card p { font-size: 13px; color: var(--text-dim); }
+
+        /* ─── Footer ─── */
+        footer { padding: 60px 0; border-top: 1px solid var(--border); text-align: center; }
+        footer .footer-brand { font-weight: 700; letter-spacing: 1px; margin-bottom: 8px; }
+        footer p { font-size: 13px; color: var(--text-muted); }
+        footer a { color: var(--text-dim); text-decoration: none; transition: color 0.2s; }
+        footer a:hover { color: var(--accent); }
+
+        /* ─── Responsive: Tablet (≤1024px) ─── */
+        @media (max-width: 1024px) {
+            .features-grid { grid-template-columns: repeat(2, 1fr); }
+            .hero h1 { font-size: 42px; }
+            .stats-bar { grid-template-columns: repeat(2, 1fr); }
+            .arch-flow { flex-wrap: wrap; gap: 8px; }
         }
 
-        .logo {
-            font-size: 1.5rem;
-            font-weight: 700;
-            letter-spacing: 2px;
-            color: var(--text-main);
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .logo span {
-            color: var(--accent-color);
-        }
-
-        .nav-links {
-            display: flex;
-            gap: 2rem;
-        }
-
-        .nav-links a {
-            color: var(--text-dim);
-            text-decoration: none;
-            font-size: 0.9rem;
-            transition: 0.3s;
-        }
-
-        .nav-links a:hover {
-            color: var(--text-main);
-        }
-
-        .hero {
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            text-align: center;
-            padding: 0 10%;
-        }
-
-        .badge {
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
-            padding: 8px 16px;
-            border-radius: 100px;
-            font-size: 0.75rem;
-            letter-spacing: 1px;
-            color: var(--accent-color);
-            margin-bottom: 2rem;
-            backdrop-filter: blur(10px);
-        }
-
-        h1 {
-            font-size: 4.5rem;
-            font-weight: 700;
-            max-width: 900px;
-            margin-bottom: 1.5rem;
-            background: linear-gradient(to bottom, #fff 40%, rgba(255,255,255,0.4));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            line-height: 1.1;
-        }
-
-        .subtitle {
-            font-size: 1.25rem;
-            color: var(--text-dim);
-            max-width: 600px;
-            margin-bottom: 3rem;
-        }
-
-        .cta-group {
-            display: flex;
-            gap: 1rem;
-        }
-
-        .btn {
-            padding: 16px 32px;
-            border-radius: 8px;
-            font-weight: 600;
-            text-decoration: none;
-            transition: 0.3s;
-            cursor: pointer;
-        }
-
-        .btn-primary {
-            background: var(--accent-color);
-            color: white;
-            box-shadow: 0 0 20px rgba(139, 92, 246, 0.4);
-        }
-
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 0 30px rgba(139, 92, 246, 0.6);
-        }
-
-        .btn-secondary {
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
-            color: var(--text-main);
-            backdrop-filter: blur(10px);
-        }
-
-        .btn-secondary:hover {
-            background: rgba(255,255,255,0.1);
-        }
-
-        .section {
-            padding: 100px 10%;
-            background: var(--bg-color);
-            border-top: 1px solid var(--glass-border);
-        }
-
-        .section-title {
-            font-size: 2.5rem;
-            text-align: center;
-            margin-bottom: 1rem;
-        }
-
-        .section-subtitle {
-            text-align: center;
-            color: var(--text-dim);
-            max-width: 800px;
-            margin: 0 auto 4rem auto;
-            font-size: 1.1rem;
-        }
-
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 2rem;
-        }
-
-        .grid-2 {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 3rem;
-        }
-
-        .card {
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
-            padding: 3rem;
-            border-radius: 16px;
-            transition: 0.3s;
-            backdrop-filter: blur(10px);
-        }
-
-        .card:hover {
-            border-color: var(--accent-color);
-            transform: translateY(-5px);
-        }
-
-        .card h3 {
-            font-size: 1.5rem;
-            margin-bottom: 1rem;
-        }
-
-        .card p {
-            color: var(--text-dim);
-            font-size: 0.95rem;
-        }
-
-        .integration-preview {
-            background: #000;
-            border: 1px solid var(--glass-border);
-            border-radius: 20px;
-            padding: 40px;
-            position: relative;
-        }
-
-        .code-block {
-            background: #0a0a0a;
-            padding: 20px;
-            border-radius: 10px;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.85rem;
-            color: #d1d5db;
-            border: 1px solid #1f2937;
-            overflow-x: auto;
-            margin-bottom: 1.5rem;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 2rem 0;
-            background: var(--glass-bg);
-            border-radius: 12px;
-            overflow: hidden;
-            border: 1px solid var(--glass-border);
-            font-size: 0.95rem;
-        }
-        
-        th, td {
-            padding: 1.25rem;
-            text-align: left;
-            border-bottom: 1px solid var(--glass-border);
-            color: var(--text-dim);
-        }
-        
-        th {
-            background: rgba(255, 255, 255, 0.05);
-            color: var(--text-main);
-            font-weight: 600;
-        }
-
-        td.blocked {
-            color: var(--danger-color);
-            font-weight: 600;
-        }
-
-        td.passed {
-            color: var(--success-color);
-            font-weight: 600;
-        }
-
-        .text-accent {
-            color: var(--accent-color);
-        }
-
-        .footer {
-            padding: 60px 10%;
-            text-align: center;
-            border-top: 1px solid var(--glass-border);
-            background: #020202;
-        }
-
-        .xs10s-logo {
-            font-weight: 600;
-            color: var(--text-dim);
-            font-size: 0.8rem;
-            letter-spacing: 2px;
-            margin-top: 20px;
-        }
-
+        /* ─── Responsive: Mobile (≤768px) ─── */
         @media (max-width: 768px) {
-            h1 { font-size: 3rem; }
-            .grid, .grid-2 { grid-template-columns: 1fr; }
+            .container { padding: 0 16px; }
+            .nav-links a:not(.nav-github) { display: none; }
+            .nav-inner { padding: 12px 16px; }
+            .hero { padding: 140px 0 80px; }
+            .hero h1 { font-size: 32px; letter-spacing: -1px; }
+            .hero-sub { font-size: 15px; margin-bottom: 32px; }
+            .hero-cta { flex-direction: column; align-items: center; }
+            .btn { width: 100%; max-width: 280px; text-align: center; justify-content: center; }
+            .stats-bar { grid-template-columns: 1fr 1fr; margin-top: 48px; }
+            .stat { padding: 20px 16px; }
+            .stat-value { font-size: 22px; }
+            .section { padding: 80px 0; }
+            .section-title { font-size: 26px; }
+            .section-desc { font-size: 14px; }
+            .features-grid, .qs-grid, .threat-grid { grid-template-columns: 1fr; }
+            .feature-card { padding: 24px; }
+            .arch-flow { flex-direction: column; align-items: center; }
+            .arch-arrow { transform: rotate(90deg); margin: 4px 0; }
+            .arch-step { width: 100%; max-width: 300px; }
+            .bench-table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+            .bench-table th, .bench-table td { padding: 12px 14px; white-space: nowrap; font-size: 12px; }
+            .code-block { padding: 16px; font-size: 12px; }
+            .qs-card { padding: 24px; }
+            .threat-card { padding: 16px; }
+        }
+
+        /* ─── Responsive: Small Mobile (≤480px) ─── */
+        @media (max-width: 480px) {
+            .hero { padding: 120px 0 60px; }
+            .hero h1 { font-size: 26px; }
+            .hero-sub { font-size: 14px; }
+            .hero-version { font-size: 10px; padding: 5px 12px; }
+            .stats-bar { grid-template-columns: 1fr 1fr; gap: 1px; }
+            .stat-value { font-size: 18px; }
+            .stat-label { font-size: 10px; }
+            .section-title { font-size: 22px; }
+            .nav-github span { display: none; }
+            .code-block { font-size: 11px; padding: 12px; line-height: 1.6; }
+        }
+
+        /* ─── Touch-friendly tap targets ─── */
+        @media (hover: none) and (pointer: coarse) {
+            .btn { min-height: 48px; }
+            .nav-links a { min-height: 44px; display: flex; align-items: center; }
+            .theme-toggle { min-width: 44px; min-height: 44px; }
         }
     </style>
 </head>
 <body>
-    <div class="hero-bg"></div>
-    
-    <nav>
-        <div class="logo">BATS<span>.</span></div>
-        <div class="nav-links">
-            <a href="#why-bats">ABOUT</a>
-            <a href="#quickstart">QUICKSTART</a>
-            <a href="#testing">TESTING</a>
-            <a href="#integrations">INTEGRATIONS</a>
-            <a href="#security">SECURITY</a>
-            <a href="https://github.com/PandiaJason/bats">GITHUB</a>
-        </div>
-    </nav>
+<div class="bg-hero"></div>
+<div class="bg-glow"></div>
 
-    <div class="hero">
-        <div class="badge">V2.0 ENTERPRISE RELEASE</div>
-        <h1>BATS prevents unsafe AI actions before they happen.</h1>
-        <p class="subtitle">BATS is the deterministic integrity layer for AI agents. Validate every action before execution using Byzantine-resilient consensus and heuristic AI safety gates.</p>
-        <div class="cta-group">
-            <a href="#quickstart" class="btn btn-primary">GET STARTED</a>
-            <a href="https://github.com/PandiaJason/bats" class="btn btn-secondary">VIEW CORE PROTOCOL</a>
+<!-- ─── Nav ─── -->
+<nav>
+    <div class="nav-inner">
+        <div class="nav-brand">BATS<span class="dot">.</span></div>
+        <div class="nav-links">
+            <a href="#architecture">Architecture</a>
+            <a href="#benchmarks">Benchmarks</a>
+            <a href="#quickstart">Quickstart</a>
+            <a href="#security">Security</a>
+            <a href="https://github.com/PandiaJason/bats" class="nav-github">
+                <svg viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+                GitHub
+            </a>
+            <button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle theme">
+                <svg class="icon-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+            </button>
         </div>
     </div>
+</nav>
 
-    <!-- WHY BATS -->
-    <section id="why-bats" class="section" style="background: #020202;">
-        <h2 class="section-title">Why BATS?</h2>
-        <p style="max-width: 800px; margin: 0 auto; text-align: center; color: var(--text-dim); font-size: 1.15rem; line-height: 1.8;">
-            In the AI era, the standard approach to autonomous multi-agent orchestration has been either blind trust or frail, centralized API wrappers—leaving critical infrastructure dangerously vulnerable to silent LLM hallucinations and malicious prompt injections. BATS solves this by acting as a decentralized, zero-trust proxy that forces every AI-proposed action to pass a rigid heuristic safety gate and achieve multi-node Byzantine quorum verification before execution, establishing a mathematically sound and tamper-proof new standard for unconditionally secure enterprise AI automation.
-        </p>
-    </section>
+<!-- ─── Hero ─── -->
+<div class="hero container">
+    <div class="hero-version"><span class="pulse"></span> V3.2 ENTERPRISE</div>
+    <h1>Stop unsafe AI actions before they execute.</h1>
+    <p class="hero-sub">BATS is a zero-trust consensus layer that validates every AI agent action through Byzantine fault-tolerant quorum. Sub-millisecond reads. Full PBFT writes in 6.5ms.</p>
+    <div class="hero-cta">
+        <a href="#quickstart" class="btn btn-primary">Get Started</a>
+        <a href="https://github.com/PandiaJason/bats" class="btn btn-ghost">View Source</a>
+        <a href="docs/whitepaper.md" class="btn btn-ghost">Read Paper</a>
+    </div>
 
-    <!-- FEATURES -->
-    <section id="features" class="section">
-        <h2 class="section-title">Byzantine Intelligence.</h2>
-        <p class="section-subtitle">A mathematically rigorous consensus layer supporting dynamic execution.</p>
-        <div class="grid">
-            <div class="card">
-                <h3>Heuristic Safety Gate</h3>
-                <p>Instantly blocks malicious intent natively before PBFT processing, dropping adversarial actions in under ~0.01s.</p>
-            </div>
-            <div class="card">
-                <h3>Dynamic Membership</h3>
-                <p>Add or remove nodes elastically at runtime without downtime. Auto-recalculates Byzantine fault-tolerance thresholds dynamically.</p>
-            </div>
-            <div class="card">
-                <h3>mTLS Zero-Trust</h3>
-                <p>Every decision is signed with Ed25519 identities across mutually authenticated TLS tunnels and committed to a Write-Ahead Log.</p>
+    <div class="stats-bar">
+        <div class="stat"><div class="stat-value">675µs</div><div class="stat-label">Read Latency (p50)</div></div>
+        <div class="stat"><div class="stat-value green">6.5ms</div><div class="stat-label">Write Latency (p50)</div></div>
+        <div class="stat"><div class="stat-value cyan">4</div><div class="stat-label">Node PBFT Cluster</div></div>
+        <div class="stat"><div class="stat-value amber">100%</div><div class="stat-label">Adversarial Block Rate</div></div>
+    </div>
+</div>
+
+<!-- ─── Features ─── -->
+<section class="section container">
+    <div class="section-label">Capabilities</div>
+    <div class="section-title">Enterprise-grade AI safety primitives.</div>
+    <div class="section-desc">Every feature designed to prevent autonomous agents from causing irreversible damage.</div>
+
+    <div class="features-grid">
+        <div class="feature-card">
+            <div class="feature-icon purple"><svg viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></div>
+            <h3>Optimistic Fast-Path</h3>
+            <p>Non-mutating reads bypass PBFT entirely at 675µs. Background consensus maintains audit trail integrity without blocking the caller.</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon green"><svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></div>
+            <h3>Hash-Chained WAL</h3>
+            <p>Every entry computes SHA-256(PrevHash + Data) creating a tamper-evident chain. Exportable to JSON/CSV for SOC2 compliance audits.</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon blue"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+            <h3>AI Heuristic Safety Gate</h3>
+            <p>Structured SafetyVerdict with numeric confidence scores. Dangerous patterns (rm -rf, DROP TABLE) blocked in 368µs before consensus.</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon red"><svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
+            <h3>Replay Attack Prevention</h3>
+            <p>Mandatory X-BATS-Nonce and temporal envelope validation (±30s drift window) on every protected endpoint.</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon cyan"><svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg></div>
+            <h3>One-Command Docker Cluster</h3>
+            <p>docker compose up boots a full 4-node mTLS cluster with health checks, auto-generated certs, and optional live dashboard.</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon amber"><svg viewBox="0 0 24 24"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg></div>
+            <h3>Live Control Plane</h3>
+            <p>Real-time dashboard at :9000 showing node health, consensus rounds, blocked action counters, and an interactive test panel.</p>
+        </div>
+    </div>
+</section>
+
+<!-- ─── Architecture ─── -->
+<section id="architecture" class="section container" style="border-top: 1px solid var(--border);">
+    <div class="section-label">Architecture</div>
+    <div class="section-title">How BATS validates an action.</div>
+    <div class="section-desc">Every AI-proposed action passes through a two-stage pipeline before touching production infrastructure.</div>
+
+    <div class="arch-flow">
+        <div class="arch-step">
+            <div class="step-num">01</div>
+            <h4>Agent Proposal</h4>
+            <p>REST/QUIC to leader</p>
+        </div>
+        <div class="arch-arrow">→</div>
+        <div class="arch-step">
+            <div class="step-num">02</div>
+            <h4>Safety Heuristic</h4>
+            <p>AI confidence scoring</p>
+        </div>
+        <div class="arch-arrow">→</div>
+        <div class="arch-step" style="border-color: var(--green);">
+            <div class="step-num" style="color: var(--green);">03a</div>
+            <h4>Fast-Path</h4>
+            <p>≥0.95 conf → 675µs</p>
+        </div>
+        <div class="arch-arrow">→</div>
+        <div class="arch-step" style="border-color: var(--blue);">
+            <div class="step-num" style="color: var(--blue);">03b</div>
+            <h4>PBFT Consensus</h4>
+            <p>2f+1 quorum → 6.5ms</p>
+        </div>
+        <div class="arch-arrow">→</div>
+        <div class="arch-step">
+            <div class="step-num">04</div>
+            <h4>WAL Commit</h4>
+            <p>SHA-256 hash chain</p>
+        </div>
+    </div>
+</section>
+
+<!-- ─── Benchmarks ─── -->
+<section id="benchmarks" class="section container" style="border-top: 1px solid var(--border);">
+    <div class="section-label">Performance</div>
+    <div class="section-title">Real cluster benchmarks. No mocks.</div>
+    <div class="section-desc">Measured on a 4-node local cluster over mTLS HTTP/2 with TLS warmup for steady-state accuracy.</div>
+
+    <table class="bench-table" style="max-width: 800px; margin: 0 auto;">
+        <thead>
+            <tr>
+                <th>Action Type</th>
+                <th>p50</th>
+                <th>p95</th>
+                <th>p99</th>
+                <th>Verdict</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>SAFE_READ (Fast Bypass)</td>
+                <td class="val-green">675µs</td>
+                <td class="val-green">1.76ms</td>
+                <td class="val-green">1.76ms</td>
+                <td>Optimistic Approval</td>
+            </tr>
+            <tr>
+                <td>SAFE Write (Sync PBFT)</td>
+                <td class="val-blue">6.5ms</td>
+                <td class="val-blue">7.8ms</td>
+                <td class="val-blue">7.8ms</td>
+                <td>Full Quorum Commit</td>
+            </tr>
+            <tr>
+                <td>UNSAFE (Immediate Reject)</td>
+                <td class="val-red">368µs</td>
+                <td class="val-red">525µs</td>
+                <td class="val-red">525µs</td>
+                <td style="color: var(--red); font-family: 'Inter'; font-weight: 600;">BLOCKED</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <p style="text-align: center; color: var(--text-muted); font-size: 13px; margin-top: 16px;">
+        Run yourself: <code style="background: var(--surface-2); padding: 3px 8px; border-radius: 4px; font-family: 'JetBrains Mono'; font-size: 12px;">go test -v -timeout 60s ./tests/ -run TestBenchmarkLatency</code>
+    </p>
+</section>
+
+<!-- ─── Quickstart ─── -->
+<section id="quickstart" class="section container" style="border-top: 1px solid var(--border);">
+    <div class="section-label">Getting Started</div>
+    <div class="section-title">Deploy in 60 seconds.</div>
+    <div class="section-desc">Choose your path: Docker or bare metal.</div>
+
+    <div class="qs-grid">
+        <div class="qs-card">
+            <div class="qs-num">Option A</div>
+            <h3>Docker (recommended)</h3>
+            <p>Full 4-node cluster with mTLS, health checks, and optional dashboard.</p>
+            <div class="code-block">
+<span class="comment"># Generate certificates</span>
+<span class="cmd">./scripts/gen-certs.sh</span>
+
+<span class="comment"># Boot the cluster</span>
+<span class="cmd">docker compose up</span>
+
+<span class="comment"># With dashboard</span>
+<span class="cmd">docker compose --profile dashboard up</span></div>
+        </div>
+        <div class="qs-card">
+            <div class="qs-num">Option B</div>
+            <h3>Bare Metal</h3>
+            <p>Run nodes directly with Go 1.24+ for development and debugging.</p>
+            <div class="code-block">
+<span class="comment"># Clone and build</span>
+<span class="cmd">git clone</span> https://github.com/PandiaJason/bats.git
+<span class="cmd">cd</span> bats && <span class="cmd">go mod tidy</span>
+
+<span class="comment"># Start 4-node cluster</span>
+<span class="cmd">go run</span> cmd/node/main.go node1 8001 <span class="flag">&</span>
+<span class="cmd">go run</span> cmd/node/main.go node2 8002 <span class="flag">&</span>
+<span class="cmd">go run</span> cmd/node/main.go node3 8003 <span class="flag">&</span>
+<span class="cmd">go run</span> cmd/node/main.go node4 8004 <span class="flag">&</span></div>
+        </div>
+    </div>
+</section>
+
+<!-- ─── Security ─── -->
+<section id="security" class="section container" style="border-top: 1px solid var(--border);">
+    <div class="section-label">Security Model</div>
+    <div class="section-title">Built for the OWASP Top 10 for LLMs.</div>
+    <div class="section-desc">Mathematically provable mitigations against the most critical AI threat vectors.</div>
+
+    <div class="threat-grid">
+        <div class="threat-card">
+            <div class="threat-icon"><svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
+            <div>
+                <h4>Agent Hallucinations</h4>
+                <p>Multi-model PBFT cross-voting rejects fabricated outputs before they reach production.</p>
             </div>
         </div>
-    </section>
-
-    <!-- QUICKSTART / GETTING STARTED -->
-    <section id="quickstart" class="section" style="background: #020202;">
-        <h2 class="section-title">Getting Started</h2>
-        <p class="section-subtitle">Deploy a robust decentralized cluster in seconds natively with Go 1.24+.</p>
-
-        <div class="grid-2">
+        <div class="threat-card">
+            <div class="threat-icon"><svg viewBox="0 0 24 24"><path d="M12 22V8"/><path d="M5 12H2a10 10 0 0 0 20 0h-3"/><circle cx="12" cy="5" r="3"/></svg></div>
             <div>
-                <h3>1. Bootstrap the Cluster</h3>
-                <p style="color: var(--text-dim); margin-bottom: 1rem;">Instantiate the primary genesis node that will accept the first cluster connections.</p>
-                <div class="code-block">
-# Clone the Core
-git clone https://github.com/PandiaJason/bats.git
-cd bats
-
-# Start Node 1 (Bootstrap)
-go run cmd/node/main.go node1 8001
-                </div>
-            </div>
-            <div>
-                <h3>2. Dynamically Scale</h3>
-                <p style="color: var(--text-dim); margin-bottom: 1rem;">Spin up replica nodes instantly via the CLI join-tool to scale out consensus.</p>
-                <div class="code-block">
-# In separate terminals, spin up peers
-PEERS="localhost:8001" go run cmd/node/main.go node2 8002
-PEERS="localhost:8001" go run cmd/node/main.go node3 8003
-
-# Use the dynamic Join Tool to scale
-go run cmd/join-tool/main.go localhost:8001 node4 8004
-                </div>
+                <h4>Prompt Injections</h4>
+                <p>Pre-consensus heuristic safety gate pattern-matches and blocks malicious payloads in &lt;500µs.</p>
             </div>
         </div>
-    </section>
-
-    <!-- TESTING & SIMULATION RESULTS -->
-    <section id="testing" class="section">
-        <h2 class="section-title">Testing & Simulation</h2>
-        <p class="section-subtitle">We provide a full simulation suite out of the box to prove BATS's efficacy in blocking autonomous agent hallucinations. Below are real verified results running <code>./scripts/test_simulation.sh</code>.</p>
-        
-        <table style="max-width: 1000px; margin: 0 auto;">
-            <thead>
-                <tr>
-                    <th>Simulated Agent Proposal</th>
-                    <th>Intent</th>
-                    <th>Action Latency</th>
-                    <th>BATS Verdict</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td><code>READ /etc/hostname</code></td>
-                    <td>Safe Info Retrieval</td>
-                    <td>15.01s (Consensus)</td>
-                    <td class="passed">[PASSED] Forwarded to Consensus</td>
-                </tr>
-                <tr>
-                    <td><code style="color: #ef4444;">DELETE FROM users WHERE...</code></td>
-                    <td>Malicious Database Drop</td>
-                    <td class="text-accent">0.01s (Instant)</td>
-                    <td class="blocked">[BLOCKED] AI Safety Gate Rejected</td>
-                </tr>
-                <tr>
-                    <td><code style="color: #ef4444;">rm -rf /var/www/html</code></td>
-                    <td>Malicious Shell Execution</td>
-                    <td class="text-accent">0.01s (Instant)</td>
-                    <td class="blocked">[BLOCKED] AI Safety Gate Rejected</td>
-                </tr>
-                <tr>
-                    <td><code>POST /api/metric {count}</code></td>
-                    <td>Safe API Execution</td>
-                    <td>15.01s (Consensus)</td>
-                    <td class="passed">[PASSED] Forwarded to Consensus</td>
-                </tr>
-                <tr>
-                    <td><code style="color: #ef4444;">cat /etc/shadow</code></td>
-                    <td>Privileged System Access</td>
-                    <td class="text-accent">0.01s (Instant)</td>
-                    <td class="blocked">[BLOCKED] AI Safety Gate Rejected</td>
-                </tr>
-            </tbody>
-        </table>
-    </section>
-
-    <!-- INTEGRATIONS -->
-    <section id="integrations" class="section" style="background: #020202;">
-        <h2 class="section-title">Native Integrations</h2>
-        <p class="section-subtitle">Integrate BATS into your existing workflows in seconds through our native hooks.</p>
-
-        <div class="grid-2">
-            <div class="integration-preview">
-                <h3 style="margin-bottom: 1rem; color: var(--accent-color);">n8n Automation</h3>
-                <p style="color: var(--text-dim); margin-bottom: 1rem;">Acts as a choke-point node in n8n workflows before any external destructive acts.</p>
-                <div class="code-block">
-// n8n Safety Gate Validation Request
-POST https://bats.xs10s.network/validate
-{
-  "action": "TRANSFER_50000",
-  "context": "n8n_automated_execution"
-}
-
-// BATS Cluster Response
-{
-  "approved": false,
-  "reason": "Byzantine Quorum Failed"
-}
-                </div>
+        <div class="threat-card">
+            <div class="threat-icon"><svg viewBox="0 0 24 24"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg></div>
+            <div>
+                <h4>Byzantine Node Compromise</h4>
+                <p>Tolerates up to f actively malicious nodes (f = ⌊(N-1)/3⌋) with Ed25519-signed consensus.</p>
             </div>
+        </div>
+        <div class="threat-card">
+            <div class="threat-icon"><svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg></div>
+            <div>
+                <h4>Replay Attacks</h4>
+                <p>Mandatory nonce + timestamp validation (±30s) with automatic nonce deduplication.</p>
+            </div>
+        </div>
+    </div>
+</section>
 
-            <div class="integration-preview">
-                <h3 style="margin-bottom: 1rem; color: var(--accent-color);">OpenClaw Python</h3>
-                <p style="color: var(--text-dim); margin-bottom: 1rem;">Direct execution interceptor layer natively wrapped around your Python execution functions.</p>
-                <div class="code-block">
+<!-- ─── Integrations ─── -->
+<section class="section container" style="border-top: 1px solid var(--border);">
+    <div class="section-label">Integrations</div>
+    <div class="section-title">Drop-in safety for your stack.</div>
+    <div class="section-desc">Native middleware for popular orchestration frameworks.</div>
+
+    <div class="qs-grid">
+        <div class="qs-card">
+            <h3 style="color: var(--blue);">OpenClaw (Python)</h3>
+            <p>Direct execution interceptor for Python-driven AI workflows.</p>
+            <div class="code-block">
+<span class="comment"># pip install bats-vettor</span>
 from bats_vettor import BatsSafetyGate
 
-# Establish mTLS context with BATS
 gate = BatsSafetyGate("https://localhost:8001")
-
-# Wrapper safely intercepts actions
-approved, info = gate.validate_action(
+ok, info = gate.validate_action(
     "DROP TABLE production_db;"
 )
-# Returns: False, "AI Gate Rejected..."
-                </div>
-            </div>
+<span class="comment"># Returns: False, "Blocked by AI Safety Gate"</span></div>
         </div>
-    </section>
+        <div class="qs-card">
+            <h3 style="color: var(--accent);">n8n Automation</h3>
+            <p>Choke-point node for n8n workflows before any destructive action.</p>
+            <div class="code-block">
+<span class="comment">// POST to BATS validation endpoint</span>
+POST https://bats-cluster:8001/validate
+{
+  "action": "TRANSFER $50,000 to external"
+}
 
-    <!-- THREAT MODEL -->
-    <section id="security" class="section">
-        <h2 class="section-title">Threat Model Mitigations</h2>
-        <p class="section-subtitle">Built to secure organizations against the OWASP Top 10 for LLM Applications.</p>
-
-        <table style="max-width: 900px; margin: 0 auto;">
-            <thead>
-                <tr>
-                    <th>OWASP Threat Vector</th>
-                    <th>BATS Protocol Mitigation Strategy</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td style="color: var(--text-main);"><strong>Agent Hallucinations</strong></td>
-                    <td>Vetted through multi-model "Council of Agents" PBFT cross-voting.</td>
-                </tr>
-                <tr>
-                    <td style="color: var(--text-main);"><strong>Prompt Injections</strong></td>
-                    <td>Hard-blocked natively by the pre-consensus Heuristic AI Safety Gate.</td>
-                </tr>
-                <tr>
-                    <td style="color: var(--text-main);"><strong>Node Compromise (Byzantine)</strong></td>
-                    <td>Byzantine fault tolerance mitigates up to $f$ actively malicious cluster nodes.</td>
-                </tr>
-                <tr>
-                    <td style="color: var(--text-main);"><strong>Network Eavesdropping / Sybils</strong></td>
-                    <td>AES-256 GCM encrypted mutually-authenticated TLS tunnels enforced globally.</td>
-                </tr>
-            </tbody>
-        </table>
-    </section>
-
-    <div class="footer">
-        <div class="xs10s-logo">POWERED BY XS10S INFRASTRUCTURE</div>
-        <div style="margin-top: 20px; color: #444; font-size: 0.85rem;">
-            <a href="https://github.com/PandiaJason/bats" style="color: var(--text-dim); text-decoration: none; margin: 0 10px;">GitHub Repository</a>
-            <a href="https://github.com/PandiaJason/bats/blob/main/LICENSE" style="color: var(--text-dim); text-decoration: none; margin: 0 10px;">MIT License</a>
+<span class="comment">// Response</span>
+{ "approved": <span style="color:var(--red)">false</span>,
+  "reason": "Byzantine quorum rejected" }</div>
         </div>
-        <p style="margin-top: 20px; color: #444; font-size: 0.75rem;">&copy; 2026 BATS | RESEARCH ARCHITECTURE</p>
     </div>
+</section>
+
+<!-- ─── Footer ─── -->
+<footer class="container">
+    <div class="footer-brand">BATS</div>
+    <p>Byzantine Agent Trust System — built by <a href="https://github.com/PandiaJason">Xs10s Research</a></p>
+    <p style="margin-top: 12px;">
+        <a href="https://github.com/PandiaJason/bats" style="margin: 0 12px;">GitHub</a>
+        <a href="docs/whitepaper.md" style="margin: 0 12px;">Whitepaper</a>
+        <a href="https://github.com/PandiaJason/bats/blob/main/LICENSE" style="margin: 0 12px;">MIT License</a>
+    </p>
+    <p style="margin-top: 20px; font-size: 12px;">&copy; 2026 BATS v3.2</p>
+</footer>
+
+<script>
+function toggleTheme() {
+    const html = document.documentElement;
+    const current = html.getAttribute('data-theme');
+    const next = current === 'light' ? 'dark' : 'light';
+    html.setAttribute('data-theme', next);
+    localStorage.setItem('bats-theme', next);
+}
+// Restore saved theme
+(function() {
+    const saved = localStorage.getItem('bats-theme');
+    if (saved) document.documentElement.setAttribute('data-theme', saved);
+})();
+</script>
 </body>
 </html>
