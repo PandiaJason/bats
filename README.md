@@ -111,19 +111,19 @@ chmod +x scripts/test_simulation.sh
 
 ### Real-World Cluster Benchmark (v3.1)
 
-The benchmark suite boots a real 4-node PBFT cluster over mTLS HTTP/2, fires actual HTTPS requests through the full safety pipeline, and measures end-to-end latency including AI heuristic evaluation, cryptographic signing, consensus broadcasting, and WAL persistence.
+The benchmark suite boots a real 4-node PBFT cluster over mTLS HTTP/2, warms up TLS connection pools, then fires actual HTTPS requests through the full safety pipeline measuring end-to-end latency including AI heuristic evaluation, cryptographic signing, consensus broadcasting, and WAL persistence.
 
 ```bash
-go test -v -timeout 120s ./tests/ -run TestBenchmarkLatency
+go test -v -timeout 60s ./tests/ -run TestBenchmarkLatency
 ```
 
 | Action Type | p50 | p95 | p99 | Verdict |
 | :--- | :--- | :--- | :--- | :--- |
-| **SAFE_READ (Fast Bypass)** | **1.13ms** | **92.36ms** | **92.36ms** | Optimistic Approval |
-| **SAFE Write (Sync PBFT)** | **9.76ms** | **10.80ms** | **10.80ms** | Full Quorum Commit |
-| **UNSAFE (Immediate Reject)** | **0.59ms** | **1.49ms** | **1.49ms** | **BLOCKED** |
+| **SAFE_READ (Fast Bypass)** | **303µs** | **13.2ms** | **13.2ms** | Optimistic Approval |
+| **SAFE Write (Sync PBFT)** | **6.5ms** | **8.3ms** | **8.3ms** | Full Quorum Commit |
+| **UNSAFE (Immediate Reject)** | **435µs** | **6.3ms** | **6.3ms** | **BLOCKED** |
 
-> **v3.1 Fix:** Synchronous PBFT writes previously timed out at 5000ms+ due to a mutex deadlock in the consensus engine and an HTTP/3-only transport that couldn't reach HTTP/2 TLS listeners. Both bugs are now resolved — writes complete in under 10ms with full 2f+1 Byzantine quorum.
+> **Performance Note:** Benchmarks include a TLS warmup phase to accurately measure steady-state latency. Cold-start TLS handshakes add ~80ms to the first request only.
 
 ---
 

@@ -1,5 +1,5 @@
 | Action Type | p50 | p95 | p99 |
 |---|---|---|---|
-| SAFE_READ (Fast Bypass) | 1.13225ms | 92.364625ms | 92.364625ms |
-| SAFE (Sync PBFT Write) | 9.759875ms | 10.795ms | 10.795ms |
-| UNSAFE (Immediate Reject) | 589.75µs | 1.494542ms | 1.494542ms |
+| SAFE_READ (Fast Bypass) | 303.375µs | 13.213709ms | 13.213709ms |
+| SAFE Write (Sync PBFT) | 6.525ms | 8.264333ms | 8.264333ms |
+| UNSAFE (Immediate Reject) | 435.875µs | 6.314375ms | 6.314375ms |
