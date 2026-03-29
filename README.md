@@ -109,17 +109,21 @@ chmod +x scripts/test_simulation.sh
 ./scripts/test_simulation.sh
 ```
 
-### Real-World Cluster Benchmark
+### Real-World Cluster Benchmark (v3.1)
 
-The test suite runs a complete end-to-end load evaluation across a 4-node PBFT proxy validating transport layer latency.
+The benchmark suite boots a real 4-node PBFT cluster over mTLS HTTP/2, fires actual HTTPS requests through the full safety pipeline, and measures end-to-end latency including AI heuristic evaluation, cryptographic signing, consensus broadcasting, and WAL persistence.
 
-| Action Type               | p50 Latency | p95 Latency | p99 Latency | Verdict |
-| :------------------------ | :---------- | :---------- | :---------- | :--- |
-| **SAFE_READ (Fast Bypass)** | **7.08ms** | **68.39ms** | **68.39ms** | [Optimistic Approval] |
-| **SAFE (Sync PBFT)**      | **5000ms+** | **5000ms+** | **5000ms+** | [Quorum Sync Required] |
-| **UNSAFE (Immediate)**    | **8.46ms**  | **13.67ms** | **13.67ms** | **[BLOCKED]** AI Rejected |
+```bash
+go test -v -timeout 120s ./tests/ -run TestBenchmarkLatency
+```
 
-**Key Finding:** Safe read operations utilize the heuristic Fast-Path achieving sub-10ms authorization overhead, fundamentally eliminating the traditional high latency of decentralized PBFT networks for deterministic API calls.
+| Action Type | p50 | p95 | p99 | Verdict |
+| :--- | :--- | :--- | :--- | :--- |
+| **SAFE_READ (Fast Bypass)** | **1.13ms** | **92.36ms** | **92.36ms** | Optimistic Approval |
+| **SAFE Write (Sync PBFT)** | **9.76ms** | **10.80ms** | **10.80ms** | Full Quorum Commit |
+| **UNSAFE (Immediate Reject)** | **0.59ms** | **1.49ms** | **1.49ms** | **BLOCKED** |
+
+> **v3.1 Fix:** Synchronous PBFT writes previously timed out at 5000ms+ due to a mutex deadlock in the consensus engine and an HTTP/3-only transport that couldn't reach HTTP/2 TLS listeners. Both bugs are now resolved — writes complete in under 10ms with full 2f+1 Byzantine quorum.
 
 ---
 
