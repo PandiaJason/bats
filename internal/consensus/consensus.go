@@ -3,15 +3,16 @@ package consensus
 import (
 	"encoding/hex"
 	"fmt"
+	"sort"
 	"sync"
+	"time"
 
 	"bats/internal/crypto"
 	"bats/internal/network"
-	"bats/internal/storage"
 	"bats/internal/types"
+	"bats/internal/wal"
+
 	"google.golang.org/protobuf/proto"
-	"sort"
-	"time"
 )
 
 type Consensus struct {
@@ -26,9 +27,8 @@ type Consensus struct {
 	F     int
 	ID    string
 	Peers []string
-	WAL   *storage.WAL
+	WAL   *wal.WAL
 
-	// 🔐 Security: Ed25519 keys for Byzantine-safe message authentication
 	PrivateKey []byte
 	PublicKeys map[string][]byte
 
@@ -38,7 +38,7 @@ type Consensus struct {
 	OnCommit func([64]byte)
 }
 
-func New(id string, peers []string, f int, wal *storage.WAL, priv []byte, pubs map[string][]byte, net *network.Client, onCommit func([64]byte)) *Consensus {
+func New(id string, peers []string, f int, store *wal.WAL, priv []byte, pubs map[string][]byte, net *network.Client, onCommit func([64]byte)) *Consensus {
 	weights := make(map[string]int)
 	for peerID := range pubs {
 		weights[peerID] = 1
@@ -52,7 +52,7 @@ func New(id string, peers []string, f int, wal *storage.WAL, priv []byte, pubs m
 		F:               f,
 		ID:              id,
 		Peers:           peers,
-		WAL:             wal,
+		WAL:             store,
 		PrivateKey:      priv,
 		PublicKeys:      pubs,
 		Network:         net,
@@ -62,7 +62,6 @@ func New(id string, peers []string, f int, wal *storage.WAL, priv []byte, pubs m
 }
 
 func (c *Consensus) RecalculateF() {
-	// N = Len(PublicKeys)
 	n := len(c.PublicKeys)
 	c.F = (n - 1) / 3
 }
@@ -70,39 +69,43 @@ func (c *Consensus) RecalculateF() {
 func (c *Consensus) AddPeer(id string, pub []byte) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
- 
+
 	if _, ok := c.PublicKeys[id]; ok {
 		return
 	}
- 
+
 	c.PublicKeys[id] = pub
 	c.Weights[id] = 1
 	if id != c.ID {
 		c.Peers = append(c.Peers, id)
 	}
 	c.RecalculateF()
-	fmt.Printf("🛡️ Node %s: Membership Updated. Total Nodes:%d, F:%d\n", c.ID, len(c.PublicKeys), c.F)
+	fmt.Printf("[BATS] Node %s: Membership Updated. Total Nodes:%d, F:%d\n", c.ID, len(c.PublicKeys), c.F)
 }
 
+// GetPeers returns a copy of the peers slice (thread-safe, acquires lock).
 func (c *Consensus) GetPeers() []string {
 	c.mu.Lock()
 	defer c.mu.Unlock()
+	return c.getPeersLocked()
+}
+
+// getPeersLocked returns a copy of the peers slice. Caller MUST hold c.mu.
+func (c *Consensus) getPeersLocked() []string {
 	p := make([]string, len(c.Peers))
 	copy(p, c.Peers)
 	return p
 }
 
 func (c *Consensus) GetLeader() string {
-	// 🔑 Leadership determinism: Sort all known nodes
 	var allNodes []string
 	totalWeight := 0
 	for id, w := range c.Weights {
 		allNodes = append(allNodes, id)
 		totalWeight += w
 	}
-	// Sort to ensure all nodes pick the same leader for the same view
 	sort.Strings(allNodes)
-	
+
 	target := int(c.View) % totalWeight
 	current := 0
 	for i := 0; i < len(allNodes); i++ {
@@ -115,19 +118,14 @@ func (c *Consensus) GetLeader() string {
 }
 
 func (c *Consensus) IsLeader() bool {
-	leader := c.GetLeader()
-	// DEBUG
-	fmt.Printf("[DEBUG] IsLeader check: c.ID=%s, c.GetLeader()=%s\n", c.ID, leader)
-	return leader == c.ID
+	return c.GetLeader() == c.ID
 }
 
 func (c *Consensus) Start(digest [64]byte) {
 	c.mu.Lock()
-	// defer c.mu.Unlock() // Removed defer
 
 	if !c.IsLeader() {
-		fmt.Printf("⚠️ Node %s is not the leader for View %d. Ignoring Start request.\n", c.ID, c.View)
-		c.mu.Unlock() // Explicit unlock
+		c.mu.Unlock()
 		return
 	}
 
@@ -137,15 +135,17 @@ func (c *Consensus) Start(digest [64]byte) {
 		Digest: digest[:],
 		NodeId: c.ID,
 	}
-
-	// 🔐 Digital Signature for authenticating the PrePrepare message
 	c.sign(msg)
-	peers := c.GetPeers()
-	c.mu.Unlock() // Unlock before broadcasting/local handle
-	
+
+	// CRITICAL FIX: Use getPeersLocked() since we already hold c.mu.
+	// The old code called GetPeers() which tries to Lock() again = DEADLOCK.
+	peers := c.getPeersLocked()
+	c.mu.Unlock()
+
+	// Parallel fan-out to all peers
 	c.Network.Broadcast(peers, msg)
-	
-	// 🏠 Local processing: Leader also "handles" its own PrePrepare
+
+	// Leader also processes its own PrePrepare
 	c.Handle(msg)
 }
 
@@ -158,11 +158,11 @@ func (c *Consensus) Heartbeat() {
 	msg := &types.ConsensusMessage{
 		Type:   types.MessageType_PREPREPARE,
 		View:   c.View,
-		Digest: make([]byte, 64), // Heartbeat signature
+		Digest: make([]byte, 64),
 		NodeId: c.ID,
 	}
 	c.sign(msg)
-	peers := c.GetPeers()
+	peers := c.getPeersLocked()
 	c.mu.Unlock()
 	c.Network.Broadcast(peers, msg)
 }
@@ -175,38 +175,33 @@ func (c *Consensus) sign(msg *types.ConsensusMessage) {
 
 func (c *Consensus) Handle(msg *types.ConsensusMessage) {
 	c.mu.Lock()
-	// defer c.mu.Unlock() // Removed defer
 
-	// 🛡️ Byzantine Validation: Verify sender identity and signature
+	// Verify sender identity and signature
 	if pub, ok := c.PublicKeys[msg.NodeId]; ok {
-		// 🏁 v1.2: Verify the entire message content
 		sig := msg.Signature
 		msg.Signature = nil
 		data, _ := proto.Marshal(msg)
 		msg.Signature = sig
 
 		if !crypto.Verify(pub, data, sig) {
-			fmt.Printf("⛔ Node %s: SIGNATURE VERIFICATION FAILED from Node %s. Dropping message.\n", c.ID, msg.NodeId)
-			c.mu.Unlock() // Explicit unlock
+			fmt.Printf("[BATS] Node %s: SIGNATURE FAILED from %s. Dropping.\n", c.ID, msg.NodeId)
+			c.mu.Unlock()
 			return
 		}
 	} else {
-		fmt.Printf("⚠️ Node %s: UNKNOWN NODE ID %s. Dropping message.\n", c.ID, msg.NodeId)
-		c.mu.Unlock() // Explicit unlock
+		fmt.Printf("[BATS] Node %s: UNKNOWN NODE %s. Dropping.\n", c.ID, msg.NodeId)
+		c.mu.Unlock()
 		return
 	}
 
-	// Only process messages for the current view
 	if msg.View < c.View {
-		c.mu.Unlock() // Explicit unlock
+		c.mu.Unlock()
 		return
 	}
 
-	// 🛡️ Digest Validation: Only for standard consensus phases
 	if msg.Type == types.MessageType_PREPREPARE || msg.Type == types.MessageType_PREPARE || msg.Type == types.MessageType_COMMIT {
 		if len(msg.Digest) != 64 {
-			fmt.Printf("❌ Node %s: Rejected message with invalid digest length (%d bytes)\n", c.ID, len(msg.Digest))
-			c.mu.Unlock() // Explicit unlock
+			c.mu.Unlock()
 			return
 		}
 	}
@@ -223,8 +218,10 @@ func (c *Consensus) Handle(msg *types.ConsensusMessage) {
 			NodeId: c.ID,
 		}
 		c.sign(reply)
-		c.mu.Unlock() // Explicit unlock
-		c.Network.Broadcast(c.Peers, reply)
+		// CRITICAL FIX: use getPeersLocked() to avoid deadlock
+		peers := c.getPeersLocked()
+		c.mu.Unlock()
+		c.Network.Broadcast(peers, reply)
 
 	case types.MessageType_PREPARE:
 		if _, ok := c.Prepare[key]; !ok {
@@ -240,12 +237,12 @@ func (c *Consensus) Handle(msg *types.ConsensusMessage) {
 				NodeId: c.ID,
 			}
 			c.sign(commit)
-			peers := c.GetPeers()
-			c.mu.Unlock() // Explicit unlock
+			peers := c.getPeersLocked()
+			c.mu.Unlock()
 			c.Network.Broadcast(peers, commit)
-			return // Return after broadcasting commit and unlocking
+			return
 		}
-		c.mu.Unlock() // Explicit unlock if not broadcasting commit
+		c.mu.Unlock()
 
 	case types.MessageType_COMMIT:
 		if _, ok := c.Commit[key]; !ok {
@@ -254,19 +251,19 @@ func (c *Consensus) Handle(msg *types.ConsensusMessage) {
 		c.Commit[key][msg.NodeId] = true
 
 		if len(c.Commit[key]) >= 2*c.F+1 {
-			fmt.Printf("✅ CONSENSUS REACHED [View:%d]: %s\n", c.View, key)
+			fmt.Printf("[BATS] CONSENSUS REACHED [View:%d]: %s\n", c.View, key[:16]+"...")
 			c.WAL.Write("COMMITTED:" + key)
 			c.resetTimer()
 
 			if c.OnCommit != nil {
 				var d [64]byte
 				copy(d[:], msg.Digest)
-				c.mu.Unlock() // Explicit unlock before calling OnCommit
+				c.mu.Unlock()
 				c.OnCommit(d)
-				return // Return after OnCommit
+				return
 			}
 		}
-		c.mu.Unlock() // Explicit unlock if not calling OnCommit
+		c.mu.Unlock()
 
 	case types.MessageType_VIEW_CHANGE:
 		targetView := msg.View
@@ -276,17 +273,13 @@ func (c *Consensus) Handle(msg *types.ConsensusMessage) {
 		c.ViewChangeVotes[targetView][msg.NodeId] = true
 
 		if len(c.ViewChangeVotes[targetView]) >= 2*c.F+1 && targetView > c.View {
-			fmt.Printf("🔄 VIEW CHANGE QUORUM REACHED for View %d. Transitioning...\n", targetView)
+			fmt.Printf("[BATS] VIEW CHANGE to View %d\n", targetView)
 			c.View = targetView
 			c.Prepare = make(map[string]map[string]bool)
 			c.Commit = make(map[string]map[string]bool)
 			c.resetTimer()
-
-			if c.IsLeader() {
-				fmt.Printf("👑 Node %s is the NEW LEADER for View %d.\n", c.ID, c.View)
-			}
 		}
-		c.mu.Unlock() // Explicit unlock at the end of the VIEW_CHANGE case
+		c.mu.Unlock()
 	}
 }
 
@@ -302,13 +295,12 @@ func (c *Consensus) resetTimer() {
 
 func (c *Consensus) Monitor() {
 	for range c.timer.C {
-		c.mu.Lock() // Lock for the entire block
+		c.mu.Lock()
 		if c.IsLeader() {
-			c.mu.Unlock() // Unlock before calling Heartbeat, as Heartbeat handles its own locking
+			c.mu.Unlock()
 			c.Heartbeat()
 		} else {
-			// Trigger View Change if no progress
-			fmt.Printf("⏰ Node %s detected Leader Timeout. Initiating View Change...\n", c.ID)
+			fmt.Printf("[BATS] Node %s: Leader timeout. Initiating View Change.\n", c.ID)
 			nextView := c.View + 1
 			msg := &types.ConsensusMessage{
 				Type:   types.MessageType_VIEW_CHANGE,
@@ -316,10 +308,10 @@ func (c *Consensus) Monitor() {
 				NodeId: c.ID,
 			}
 			c.sign(msg)
-			peers := c.GetPeers()
+			peers := c.getPeersLocked()
 			c.Network.Broadcast(peers, msg)
-			c.mu.Unlock() // Unlock after view change logic
+			c.mu.Unlock()
 		}
-		c.resetTimer() // Reset timer regardless of leader status or view change
+		c.resetTimer()
 	}
 }

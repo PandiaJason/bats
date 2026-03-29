@@ -1,4 +1,4 @@
-package storage
+package wal
 
 import (
 	"crypto/sha256"

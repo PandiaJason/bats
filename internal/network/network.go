@@ -4,18 +4,33 @@ import (
 	"bytes"
 	"crypto/tls"
 	"crypto/x509"
+	"fmt"
 	"net/http"
 	"os"
+	"strconv"
+	"sync"
 	"time"
 
 	"bats/internal/types"
 
-	"github.com/quic-go/quic-go/http3"
 	"google.golang.org/protobuf/proto"
 )
 
+// Default network timeout per hop. Override with BATS_HOP_TIMEOUT_MS env.
+var HopTimeout = 200 * time.Millisecond
+
+func init() {
+	if v := os.Getenv("BATS_HOP_TIMEOUT_MS"); v != "" {
+		if ms, err := strconv.Atoi(v); err == nil {
+			HopTimeout = time.Duration(ms) * time.Millisecond
+		}
+	}
+}
+
 type Client struct {
-	h3Client *http.Client
+	// Primary: HTTP/2 over TLS — works reliably with self-signed certs on localhost.
+	// This is what http.ListenAndServeTLS serves on every node.
+	h2Client *http.Client
 }
 
 func NewClient(nodeID string) *Client {
@@ -23,37 +38,41 @@ func NewClient(nodeID string) *Client {
 	caCertPool := x509.NewCertPool()
 	caCertPool.AppendCertsFromPEM(caCert)
 
-	// 🛡️ Node-specific Client Certificate for mTLS
 	cert, _ := tls.LoadX509KeyPair("certs/"+nodeID+".crt", "certs/"+nodeID+".key")
 
 	tlsConfig := &tls.Config{
 		RootCAs:            caCertPool,
-		Certificates:       []tls.Certificate{cert}, // Provide own cert for mTLS
+		Certificates:       []tls.Certificate{cert},
 		InsecureSkipVerify: true,
-		NextProtos:         []string{"h3"},
 	}
 
 	return &Client{
-		h3Client: &http.Client{
-			Transport: &http3.Transport{
-				TLSClientConfig: tlsConfig,
+		h2Client: &http.Client{
+			Transport: &http.Transport{
+				TLSClientConfig:     tlsConfig,
+				MaxIdleConnsPerHost: 10,
+				IdleConnTimeout:     30 * time.Second,
+				// Force HTTP/2 by configuring TLS with h2 ALPN
+				ForceAttemptHTTP2: true,
 			},
-			Timeout: 5 * time.Second,
+			Timeout: HopTimeout,
 		},
 	}
 }
 
+// GetHTTPClient exposes the transport for forwarding and external calls.
 func (c *Client) GetHTTPClient() *http.Client {
-	return c.h3Client
+	return c.h2Client
 }
 
+// Send delivers a single consensus message to a peer. Returns error on failure.
 func (c *Client) Send(addr string, msg *types.ConsensusMessage) error {
 	data, err := proto.Marshal(msg)
 	if err != nil {
 		return err
 	}
 
-	resp, err := c.h3Client.Post("https://"+addr+"/consensus", "application/x-protobuf", bytes.NewBuffer(data))
+	resp, err := c.h2Client.Post("https://"+addr+"/consensus", "application/x-protobuf", bytes.NewBuffer(data))
 	if err != nil {
 		return err
 	}
@@ -61,15 +80,26 @@ func (c *Client) Send(addr string, msg *types.ConsensusMessage) error {
 	return nil
 }
 
+// Broadcast sends a consensus message to all peers in parallel using goroutine
+// fan-out. Each peer gets a single attempt with the configured hop timeout.
+// A WaitGroup ensures all sends are dispatched before returning.
 func (c *Client) Broadcast(peers []string, msg *types.ConsensusMessage) {
+	var wg sync.WaitGroup
 	for _, p := range peers {
+		wg.Add(1)
 		go func(peer string) {
-			for i := 0; i < 3; i++ {
-				if c.Send(peer, msg) == nil {
-					return
-				}
-				time.Sleep(50 * time.Millisecond)
+			defer wg.Done()
+			if err := c.Send(peer, msg); err != nil {
+				fmt.Printf("[NET] Failed to reach %s: %v\n", peer, err)
 			}
 		}(p)
+	}
+	// Don't block the caller forever — but do wait a bounded time
+	// for the parallel sends to complete or timeout individually.
+	done := make(chan struct{})
+	go func() { wg.Wait(); close(done) }()
+	select {
+	case <-done:
+	case <-time.After(HopTimeout + 50*time.Millisecond):
 	}
 }
