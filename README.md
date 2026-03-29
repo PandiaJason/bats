@@ -175,6 +175,33 @@ BATS acts as a choke-point node in n8n workflows before any destructive automati
 
 **Template:** `integrations/n8n-node/`
 
+### Claude Code / Antigravity (MCP)
+
+BATS ships with a native MCP (Model Context Protocol) server that lets Claude Code, Antigravity, or any MCP-compatible AI assistant validate every action through BATS before execution.
+
+```bash
+# Build the MCP server
+cd integrations/claude-code
+go build -o bats-mcp mcp_server.go
+```
+
+Add to your Claude Code or Antigravity MCP config:
+
+```json
+{
+  "mcpServers": {
+    "bats-safety": {
+      "command": "/path/to/bats-mcp",
+      "args": ["--node", "localhost:8001", "--insecure"]
+    }
+  }
+}
+```
+
+**Tools exposed:** `validate_action`, `check_health`, `get_audit_log`
+
+**Source:** `integrations/claude-code/`
+
 ---
 
 ## Security Model

@@ -250,12 +250,19 @@ footer a:hover { color: var(--accent); }
     </section>
 
     <section>
-        <h2>5. Related Work</h2>
+        <h2>5. Applied Integration: MCP for AI Coding Assistants</h2>
+        <p>A critical open challenge for BATS deployment is integration with modern AI coding assistants such as Claude Code and Antigravity, which operate via the Model Context Protocol (MCP) — a JSON-RPC 2.0 protocol over standard I/O. We have developed a native MCP server bridge (<span class="math">bats-mcp</span>) that transparently intercepts tool calls from these assistants and routes them through the BATS validation pipeline.</p>
+        <p>The architecture is straightforward: the coding assistant spawns the <span class="math">bats-mcp</span> binary as a subprocess. Every proposed action — file mutations, shell commands, API calls — is serialized as a JSON-RPC request and forwarded to the BATS node over mTLS HTTPS. The response (<span class="math">APPROVED</span> or <span class="math">BLOCKED</span>) is returned to the assistant before execution proceeds.</p>
+        <p>This integration demonstrates BATS's generality as a universal safety layer: the same PBFT consensus and heuristic gating that protects autonomous agent swarms can protect individual developer workflows with zero configuration beyond a single MCP endpoint declaration.</p>
+    </section>
+
+    <section>
+        <h2>6. Related Work</h2>
         <p>The application of classical consensus mechanisms to novel AI systems is an emerging frontier. Castro and Liskov's foundational formalization of PBFT [3] provides the mathematical backbone for deterministic state machine replication. More recently, multi-agent frameworks like ChatDev have explored agent-to-agent communication, yet they rely on implicit social trust mechanisms rather than cryptographic consensus. BATS is uniquely positioned by merging deterministic Byzantine resistance with non-deterministic LLM heuristic oversight [5].</p>
     </section>
 
     <section>
-        <h2>6. Conclusion</h2>
+        <h2>7. Conclusion</h2>
         <p>The BATS architecture provides the necessary structural rigidity to transition autonomous LLM agents from isolated novelties into trusted, enterprise-grade components. By wrapping agent outputs in cryptographic consensus, heuristic validation, and hash-chained auditing protocols, BATS successfully asserts zero-trust orchestration over the highest risk vectors of applied artificial intelligence.</p>
     </section>
 

@@ -218,6 +218,7 @@
             .section-title { font-size: 26px; }
             .section-desc { font-size: 14px; }
             .features-grid, .qs-grid, .threat-grid { grid-template-columns: 1fr; }
+            [style*="repeat(3"] { grid-template-columns: 1fr !important; }
             .feature-card { padding: 24px; }
             .arch-flow { flex-direction: column; align-items: center; }
             .arch-arrow { transform: rotate(90deg); margin: 4px 0; }
@@ -502,7 +503,7 @@
     <div class="section-title">Drop-in safety for your stack.</div>
     <div class="section-desc">Native middleware for popular orchestration frameworks.</div>
 
-    <div class="qs-grid">
+    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;">
         <div class="qs-card">
             <h3 style="color: var(--blue);">OpenClaw (Python)</h3>
             <p>Direct execution interceptor for Python-driven AI workflows.</p>
@@ -514,21 +515,36 @@ gate = BatsSafetyGate("https://localhost:8001")
 ok, info = gate.validate_action(
     "DROP TABLE production_db;"
 )
-<span class="comment"># Returns: False, "Blocked by AI Safety Gate"</span></div>
+<span class="comment"># Returns: False, "Blocked"</span></div>
+        </div>
+        <div class="qs-card">
+            <h3 style="color: var(--green);">Claude Code / Antigravity</h3>
+            <p>MCP server — validates every tool call through BATS before execution.</p>
+            <div class="code-block">
+<span class="comment">// Claude Code MCP config</span>
+{
+  "mcpServers": {
+    "bats-safety": {
+      "command": "<span class="cmd">bats-mcp</span>",
+      "args": ["<span class="flag">--node</span>",
+               "localhost:8001"]
+    }
+  }
+}</div>
         </div>
         <div class="qs-card">
             <h3 style="color: var(--accent);">n8n Automation</h3>
             <p>Choke-point node for n8n workflows before any destructive action.</p>
             <div class="code-block">
-<span class="comment">// POST to BATS validation endpoint</span>
-POST https://bats-cluster:8001/validate
+<span class="comment">// POST to BATS validation</span>
+POST https://bats:8001/validate
 {
-  "action": "TRANSFER $50,000 to external"
+  "action": "TRANSFER $50k"
 }
 
 <span class="comment">// Response</span>
 { "approved": <span style="color:var(--red)">false</span>,
-  "reason": "Byzantine quorum rejected" }</div>
+  "reason": "Quorum rejected" }</div>
         </div>
     </div>
 </section>
