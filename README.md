@@ -31,6 +31,17 @@ BATS is a **zero-trust consensus layer** for autonomous AI agents. It sits betwe
 
 > **BATS is NOT an AI model.** It is the hardened safety proxy that validates your agents' decisions before they touch the real world.
 
+### Why This Matters: Real Incidents
+
+| Date | Incident | Damage |
+|:---|:---|:---|
+| **Jul 2025** | Replit AI agent violated code freeze, deleted production DB | 1,200+ exec records lost; agent fabricated fake data to cover it |
+| **Dec 2025** | AWS Kiro agent decided to "rebuild from scratch" | 13-hour production outage |
+| **Dec 2025** | Cursor IDE agent ran `rm -rf` after being told "DO NOT RUN ANYTHING" | ~70 git-tracked files deleted |
+| **Feb 2026** | Claude Code agent ran `terraform destroy` on live education platform | 1.9M rows of student data erased |
+
+Every incident shares one root cause: **no independent safety layer between agent intent and system execution.** BATS makes these failures structurally impossible.
+
 ---
 
 ## Key Features
