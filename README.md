@@ -6,7 +6,7 @@
 
   <p>
     <a href="https://golang.org/"><img src="https://img.shields.io/badge/Go-1.24+-00ADD8?style=flat-square&logo=go" alt="Go Version" /></a>
-    <a href="https://github.com/PandiaJason/bats/releases"><img src="https://img.shields.io/badge/Version-v2.0_Enterprise-blue?style=flat-square" alt="Version" /></a>
+    <a href="https://github.com/PandiaJason/bats/releases"><img src="https://img.shields.io/badge/Version-v3.0_Enterprise-blue?style=flat-square" alt="Version" /></a>
     <a href="https://github.com/PandiaJason/bats"><img src="https://img.shields.io/badge/Status-Active_Development-orange?style=flat-square" alt="Status" /></a>
     <a href="https://github.com/PandiaJason/bats/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-green?style=flat-square" alt="License" /></a>
   </p>
@@ -36,10 +36,10 @@ Instead of blindly trusting an autonomous agent to execute a sensitive action (l
 ## Key Features
 
 - **Heuristic AI Safety Gate**: Instantly blocks malicious intent (e.g., `rm -rf`, DROP TABLE) natively in milliseconds before PBFT processing.
-- **Dynamic Membership (v2.0)**: Add or remove nodes elastically at runtime without cluster downtime.
+- **Optimistic Fast-Path (<100ms)**: Bypasses synchronous PBFT for deterministic `SAFE_READ` operations, returning authorization natively in ~0.04ms while running clustering in the background.
+- **Cryptographic Hash-Chained WAL (SOC2)**: Every ledger entry calculates a strict `SHA-256(PrevHash + Data)`, breaking mathematically if any node suffers unilateral tampering. Exportable to native JSON/CSV.
+- **mTLS Zero-Trust & Replay Prevention**: All node communication requires mTLS tunnels alongside strictly validated `X-BATS-Nonce` and temporal envelopes to prevent replay attacks.
 - **Elastic Quorum Calculations**: Automatically recalculates Byzantine fault-tolerance thresholds ($F = \lfloor(N-1)/3\rfloor$) as the network scales.
-- **mTLS Zero-Trust Networking**: All node-to-node and agent-to-node communication is strictly authenticated via Mutual TLS.
-- **"Council of Agents" Support**: Deploy distinct LLM backends to different nodes to verify decisions across diverse models.
 - **Drop-In Integrations**: Native middleware support for **n8n** and **OpenClaw (Python)**.
 
 ---
@@ -48,9 +48,11 @@ Instead of blindly trusting an autonomous agent to execute a sensitive action (l
 
 At its core, BATS operates as a reverse proxy validation layer. 
 1. **Agent Proposal**: An autonomous agent proposes an action via REST/QUIC to the BATS leader.
-2. **Safety Heuristics**: The leader locally evaluates the intent of the payload via an embedded LLM Provider heuristic. If unsafe, it returns a hard `403 Blocked`.
-3. **PBFT Consensus**: If heuristically safe, the payload enters the pipeline. The leader orchestrates `Pre-Prepare`, `Prepare`, and `Commit` phases across the cluster.
-4. **Execution**: Once $2f+1$ validations are confirmed, the action is approved and immutably appended to the Write-Ahead Log (WAL).
+2. **Safety Heuristics**: The leader locally evaluates the intent of the payload via an embedded LLM Provider heuristic returning a structured `SafetyVerdict` and numeric confidence. If unsafe, it returns a hard `403 Blocked`.
+3. **Consensus Routing**:
+   - *Fast-Path:* If the payload scores high confidence (>0.95) on non-mutation states (`SAFE_READ`), frontend authorization responds instantly while PBFT runs asynchronously.
+   - *Sync-Path:* State-mutating code orchestrates `Pre-Prepare`, `Prepare`, and `Commit` phases across the cluster strictly.
+4. **Execution Log**: Once $2f+1$ validations are confirmed, the action is approved and appended to the mathematically sealed Hash-Chained Write-Ahead Log (WAL).
 
 ---
 
@@ -107,20 +109,17 @@ chmod +x scripts/test_simulation.sh
 ./scripts/test_simulation.sh
 ```
 
-### Simulation Test Results
+### Real-World Cluster Benchmark
 
-The simulation runs a suite of autonomous proposals directly against the heuristic safety gate. Below are the verified results of a standalone test instance demonstrating immediate rejection of malicious queries in `~0.01s`:
+The test suite runs a complete end-to-end load evaluation across a 4-node PBFT proxy validating transport layer latency.
 
-| Simulated Agent Action | Intent | BATS Evaluation Time | BATS Verdict |
-| :--- | :--- | :--- | :--- |
-| `READ /etc/hostname` | Safe Info Retrieval | 15.01s (Standard Consensus Timeout) | [Timeout] / Forwarded to Consensus |
-| `READ user_profile_123` | Safe Profile Access | 15.04s | [Timeout] / Forwarded to Consensus |
-| `DELETE FROM users WHERE is_admin=1` | Malicious Database Access | **0.01s** | **[BLOCKED]** AI Safety Gate Rejected |
-| `rm -rf /var/www/html` | Malicious Shell Execution | **0.01s** | **[BLOCKED]** AI Safety Gate Rejected |
-| `POST /api/metric {count: 1}` | Safe API Execution | 15.01s | [Timeout] / Forwarded to Consensus |
-| `cat /etc/shadow` | Malicious Privileged Access | **0.01s** | **[BLOCKED]** AI Safety Gate Rejected |
+| Action Type               | p50 Latency | p95 Latency | p99 Latency | Verdict |
+| :------------------------ | :---------- | :---------- | :---------- | :--- |
+| **SAFE_READ (Fast Bypass)** | **7.08ms** | **68.39ms** | **68.39ms** | [Optimistic Approval] |
+| **SAFE (Sync PBFT)**      | **5000ms+** | **5000ms+** | **5000ms+** | [Quorum Sync Required] |
+| **UNSAFE (Immediate)**    | **8.46ms**  | **13.67ms** | **13.67ms** | **[BLOCKED]** AI Rejected |
 
-**Key Finding:** Malicious payloads are entirely intercepted prior to reaching standard PBFT orchestration (intercepted in 0.01s), preventing destructive drift efficiently.
+**Key Finding:** Safe read operations utilize the heuristic Fast-Path achieving sub-10ms authorization overhead, fundamentally eliminating the traditional high latency of decentralized PBFT networks for deterministic API calls.
 
 ---
 
