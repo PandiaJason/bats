@@ -53,22 +53,27 @@ func fireRequests(client *http.Client, url string, payload []byte, n int) []time
 	return latencies
 }
 
-// warmup sends a few throwaway requests to pre-establish TLS connection
-// pools and trigger any lazy initialization (file handles, cert loading).
-// Without this, the first request pays a ~80ms TLS handshake penalty
-// that skews p95 by 50-100x.
+// warmup sends throwaway requests to pre-establish TLS connections and
+// warm the exact /validate endpoint path. Without this, the first request
+// pays ~80ms TLS handshake + HTTP/2 SETTINGS exchange.
 func warmup(client *http.Client, url string) {
-	payload := []byte(`{"action":"read warmup"}`)
-	for i := 0; i < 5; i++ {
-		req, _ := http.NewRequest("POST", url, bytes.NewBuffer(payload))
-		req.Header.Set("Content-Type", "application/json")
-		req.Header.Set("X-BATS-Nonce", fmt.Sprintf("warmup-%d-%d", time.Now().UnixNano(), i))
-		req.Header.Set("X-BATS-Timestamp", fmt.Sprintf("%d", time.Now().Unix()))
-		resp, err := client.Do(req)
-		if err == nil {
-			resp.Body.Close()
+	// Warm all three action paths to populate the connection pool
+	payloads := []string{
+		`{"action":"warmup read"}`,
+		`{"action":"warmup update"}`,
+		`{"action":"DROP warmup"}`,
+	}
+	for _, p := range payloads {
+		for i := 0; i < 3; i++ {
+			req, _ := http.NewRequest("POST", url, bytes.NewBufferString(p))
+			req.Header.Set("Content-Type", "application/json")
+			req.Header.Set("X-BATS-Nonce", fmt.Sprintf("warmup-%d-%d", time.Now().UnixNano(), i))
+			req.Header.Set("X-BATS-Timestamp", fmt.Sprintf("%d", time.Now().Unix()))
+			resp, err := client.Do(req)
+			if err == nil {
+				resp.Body.Close()
+			}
 		}
-		time.Sleep(5 * time.Millisecond)
 	}
 }
 

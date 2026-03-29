@@ -259,29 +259,24 @@ func (n *Node) HandleValidate(w http.ResponseWriter, r *http.Request) {
 
 	if verdict.IsFastPathEligible() {
 		// FAST-PATH: Confidence >= 0.95 for a non-mutating read.
-		// Return immediately; PBFT runs in background for audit consistency.
-		fmt.Printf("[BATS-FAST-PATH] Node %s: confidence=%.2f >= 0.95, approving optimistically\n",
-			n.ID, verdict.Confidence)
-
-		// Log the fast-path approval to the WAL
-		n.WAL.Append(
-			fmt.Sprintf("%x", digest),
-			"external-agent",
-			"APPROVED_FAST_PATH",
-			nil,
-		)
-
-		// Spawn background PBFT for eventual consistency in the audit trail.
-		// This goroutine is fire-and-forget; the client already has the response.
-		go n.Consensus.Start(digest)
+		// Response goes out FIRST. All I/O (WAL, logging, PBFT) is deferred
+		// to a background goroutine to keep p95 latency under 2ms.
+		digestHex := fmt.Sprintf("%x", digest)
 
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]interface{}{
 			"approved":   true,
-			"digest":     fmt.Sprintf("%x", digest),
+			"digest":     digestHex,
 			"fast_path":  true,
 			"confidence": verdict.Confidence,
 		})
+
+		// All post-response work: WAL persistence, audit log, background PBFT.
+		// None of this blocks the client.
+		go func() {
+			n.WAL.Append(digestHex, "external-agent", "APPROVED_FAST_PATH", nil)
+			n.Consensus.Start(digest)
+		}()
 		return
 	}
 

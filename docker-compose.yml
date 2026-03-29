@@ -1,54 +1,138 @@
+# =============================================================================
+# BATS (Byzantine Agent Trust System) — Docker Compose
+# Spins up a 4-node PBFT cluster + optional dashboard with one command.
+#
+# Usage:
+#   docker compose up              # Start cluster + dashboard
+#   docker compose up --scale node=6  # Scale to 6 nodes (edit PEERS accordingly)
+#   docker compose down            # Tear down
+#
+# Prerequisites:
+#   ./scripts/gen-certs.sh         # Run once to generate mTLS certs
+# =============================================================================
+
 services:
+  # ── Node 1 (Genesis Leader) ────────────────────────────────────────────────
   node1:
     build: .
+    container_name: bats-node1
+    command: ["/node", "node1", "8001"]
+    environment:
+      - PEERS=node1:8001,node2:8002,node3:8003,node4:8004
+      - AI_PROVIDER=${AI_PROVIDER:-}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - BATS_CONSENSUS_TIMEOUT_MS=${BATS_CONSENSUS_TIMEOUT_MS:-800}
     ports:
       - "8001:8001"
-    command: ["node1", "8001"]
-    environment:
-      - PEERS=node1:8001,node2:8002,node3:8003,node4:8004
+    volumes:
+      - ./certs:/certs:ro
     networks:
       - bats-net
+    healthcheck:
+      test: ["CMD", "wget", "--no-check-certificate", "-qO-", "https://localhost:8001/status"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+    restart: unless-stopped
 
+  # ── Node 2 ─────────────────────────────────────────────────────────────────
   node2:
     build: .
+    container_name: bats-node2
+    command: ["/node", "node2", "8002"]
+    environment:
+      - PEERS=node1:8001,node2:8002,node3:8003,node4:8004
+      - AI_PROVIDER=${AI_PROVIDER:-}
+      - BATS_CONSENSUS_TIMEOUT_MS=${BATS_CONSENSUS_TIMEOUT_MS:-800}
     ports:
       - "8002:8002"
-    command: ["node2", "8002"]
-    environment:
-      - PEERS=node1:8001,node2:8002,node3:8003,node4:8004
+    volumes:
+      - ./certs:/certs:ro
     networks:
       - bats-net
+    healthcheck:
+      test: ["CMD", "wget", "--no-check-certificate", "-qO-", "https://localhost:8002/status"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+    depends_on:
+      node1:
+        condition: service_healthy
+    restart: unless-stopped
 
+  # ── Node 3 ─────────────────────────────────────────────────────────────────
   node3:
     build: .
+    container_name: bats-node3
+    command: ["/node", "node3", "8003"]
+    environment:
+      - PEERS=node1:8001,node2:8002,node3:8003,node4:8004
+      - AI_PROVIDER=${AI_PROVIDER:-}
+      - BATS_CONSENSUS_TIMEOUT_MS=${BATS_CONSENSUS_TIMEOUT_MS:-800}
     ports:
       - "8003:8003"
-    command: ["node3", "8003"]
-    environment:
-      - PEERS=node1:8001,node2:8002,node3:8003,node4:8004
+    volumes:
+      - ./certs:/certs:ro
     networks:
       - bats-net
+    healthcheck:
+      test: ["CMD", "wget", "--no-check-certificate", "-qO-", "https://localhost:8003/status"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+    depends_on:
+      node1:
+        condition: service_healthy
+    restart: unless-stopped
 
+  # ── Node 4 ─────────────────────────────────────────────────────────────────
   node4:
     build: .
-    ports:
-      - "8004:8004"
-    command: ["node4", "8004"]
+    container_name: bats-node4
+    command: ["/node", "node4", "8004"]
     environment:
       - PEERS=node1:8001,node2:8002,node3:8003,node4:8004
+      - AI_PROVIDER=${AI_PROVIDER:-}
+      - BATS_CONSENSUS_TIMEOUT_MS=${BATS_CONSENSUS_TIMEOUT_MS:-800}
+    ports:
+      - "8004:8004"
+    volumes:
+      - ./certs:/certs:ro
     networks:
       - bats-net
+    healthcheck:
+      test: ["CMD", "wget", "--no-check-certificate", "-qO-", "https://localhost:8004/status"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+    depends_on:
+      node1:
+        condition: service_healthy
+    restart: unless-stopped
 
+  # ── Dashboard (optional) ───────────────────────────────────────────────────
   dashboard:
     build: .
-    ports:
-      - "8080:8080"
-    command: ["dashboard"]
+    container_name: bats-dashboard
     entrypoint: ["/dashboard"]
     environment:
       - PEERS=node1:8001,node2:8002,node3:8003,node4:8004
+    ports:
+      - "9000:9000"
+    volumes:
+      - ./certs:/certs:ro
     networks:
       - bats-net
+    depends_on:
+      node1:
+        condition: service_healthy
+    restart: unless-stopped
+    profiles:
+      - dashboard
 
 networks:
   bats-net:

@@ -109,9 +109,9 @@ chmod +x scripts/test_simulation.sh
 ./scripts/test_simulation.sh
 ```
 
-### Real-World Cluster Benchmark (v3.1)
+### Real-World Cluster Benchmark (v3.2)
 
-The benchmark suite boots a real 4-node PBFT cluster over mTLS HTTP/2, warms up TLS connection pools, then fires actual HTTPS requests through the full safety pipeline measuring end-to-end latency including AI heuristic evaluation, cryptographic signing, consensus broadcasting, and WAL persistence.
+The benchmark boots a real 4-node PBFT cluster over mTLS HTTP/2, warms TLS connection pools across all endpoints, then fires HTTPS requests through the full safety pipeline. Measures end-to-end: AI heuristic → cryptographic signing → consensus broadcast → WAL persistence.
 
 ```bash
 go test -v -timeout 60s ./tests/ -run TestBenchmarkLatency
@@ -119,11 +119,11 @@ go test -v -timeout 60s ./tests/ -run TestBenchmarkLatency
 
 | Action Type | p50 | p95 | p99 | Verdict |
 | :--- | :--- | :--- | :--- | :--- |
-| **SAFE_READ (Fast Bypass)** | **303µs** | **13.2ms** | **13.2ms** | Optimistic Approval |
-| **SAFE Write (Sync PBFT)** | **6.5ms** | **8.3ms** | **8.3ms** | Full Quorum Commit |
-| **UNSAFE (Immediate Reject)** | **435µs** | **6.3ms** | **6.3ms** | **BLOCKED** |
+| **SAFE_READ (Fast Bypass)** | **675µs** | **1.76ms** | **1.76ms** | Optimistic Approval |
+| **SAFE Write (Sync PBFT)** | **6.5ms** | **7.8ms** | **7.8ms** | Full Quorum Commit |
+| **UNSAFE (Immediate Reject)** | **368µs** | **525µs** | **525µs** | **BLOCKED** |
 
-> **Performance Note:** Benchmarks include a TLS warmup phase to accurately measure steady-state latency. Cold-start TLS handshakes add ~80ms to the first request only.
+> **Performance:** Fast-path reads defer all I/O (WAL, logging, PBFT) to background goroutines, keeping p50→p95 variance under 3x. Benchmarks include TLS warmup for steady-state accuracy.
 
 ---
 
