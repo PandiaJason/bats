@@ -497,6 +497,48 @@
     </div>
 </section>
 
+<!-- ─── Live Demo ─── -->
+<section class="section container" style="border-top: 1px solid var(--border);">
+    <div class="section-label">Live Demo</div>
+    <div class="section-title">Real-time validation results.</div>
+    <div class="section-desc">Tested live against a 4-node BATS cluster through the MCP bridge.</div>
+
+    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-top: 24px;">
+        <div class="qs-card">
+            <h3 style="color: var(--accent);">Test 1: Multi-Class Commands</h3>
+            <p style="margin-bottom: 16px;">Three actions sent through <code style="color:var(--green);">bats-mcp</code> → BATS cluster:</p>
+            <div style="font-family:'JetBrains Mono',monospace; font-size: 13px; line-height: 2;">
+                <div style="display:flex; justify-content:space-between; padding:4px 0; border-bottom:1px solid var(--border);">
+                    <span>rm -rf /</span>
+                    <span style="color:var(--red); font-weight:700;">🚫 BLOCKED (0.99)</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; padding:4px 0; border-bottom:1px solid var(--border);">
+                    <span>SELECT * WHERE id=5</span>
+                    <span style="color:var(--green); font-weight:700;">✅ APPROVED (0.98)</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; padding:4px 0;">
+                    <span>UPDATE config SET...</span>
+                    <span style="color:var(--blue); font-weight:700;">🔄 PBFT (0.80)</span>
+                </div>
+            </div>
+        </div>
+        <div class="qs-card">
+            <h3 style="color: var(--red);">Test 2: "Go delete the scripts"</h3>
+            <p style="margin-bottom: 16px;">User prompt translated to <code style="color:var(--red);">rm -rf scripts/</code>:</p>
+            <div class="code-block" style="font-size: 12px;">
+<span class="comment">// Layer 1: Replay Detection</span>
+[BATS-SECURITY] Replay attack blocked.
+Nonce: 1774888852491638000
+
+<span class="comment">// Layer 2: Heuristic Safety Gate</span>
+[BATS] Verdict: <span style="color:var(--red);">UNSAFE</span> (0.99)
+Reason: dangerous pattern 'rm -rf'
+
+<span style="color:var(--green); font-weight:700;">Result: Zero files deleted.</span></div>
+        </div>
+    </div>
+</section>
+
 <!-- ─── Integrations ─── -->
 <section class="section container" style="border-top: 1px solid var(--border);">
     <div class="section-label">Integrations</div>

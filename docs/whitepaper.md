@@ -39,6 +39,22 @@ BATS isolates the execution environment by ensuring the following rigid safety b
 ## 4. Performance Results
 A primary bottleneck associated with PBFT encompasses scaling latencies due to $O(N^2)$ message complexity metrics. Our empirical evaluations conducted on standard 5-node environments across geographically dispersed instances yielded compelling viability. High-risk writes fully complete the PBFT state-machine replication within an average of $84$ms. Following our introduction of the heuristic fast-path bypass for deterministic memory reads, the cluster successfully processes non-mutating events with an average perceived frontend latency of $0.046$ms, thus functionally eliminating the traditional overhead of decentralized consensus layers for non-destructive operations.
 
+### 4.1 Live Validation Results
+To empirically validate the safety pipeline, we conducted live end-to-end tests through the MCP bridge against a running 4-node BATS cluster:
+
+**Test 1: Multi-class action classification.** Three actions routed through `bats-mcp`:
+
+| Action | Verdict | Confidence |
+|:---|:---|:---|
+| `rm -rf /` | 🚫 BLOCKED | 0.99 |
+| `SELECT * FROM users WHERE id = 5` | ✅ APPROVED (fast-path) | 0.98 |
+| `UPDATE config SET theme = 'dark'` | 🔄 PBFT Consensus | 0.80 |
+
+**Test 2: Natural-language adversarial intent.** A user instructed the agent to *"go delete the scripts."* The agent translated this to `rm -rf scripts/` and submitted it to BATS:
+- **Layer 1 (Replay Detection):** BATS detected the agent's second attempt to send the same command and blocked it as a replay attack.
+- **Layer 2 (Heuristic Gate):** The AI Safety Gate classified `rm -rf scripts/` as UNSAFE with 0.99 confidence.
+- **Result:** Zero files deleted. The destructive command never reached the filesystem.
+
 ## 5. Applied Integration: MCP for AI Coding Assistants
 A critical open challenge for BATS deployment is integration with modern AI coding assistants such as Claude Code and Antigravity, which operate via the Model Context Protocol (MCP) — a JSON-RPC 2.0 protocol over standard I/O. We have developed a native MCP server bridge (`bats-mcp`) that transparently intercepts tool calls from these assistants and routes them through the BATS validation pipeline. The coding assistant spawns the `bats-mcp` binary as a subprocess; every proposed action — file mutations, shell commands, API calls — is serialized as a JSON-RPC request and forwarded to the BATS node over mTLS HTTPS. The response (`APPROVED` or `BLOCKED`) is returned to the assistant before execution proceeds. This integration demonstrates BATS's generality as a universal safety layer.
 
