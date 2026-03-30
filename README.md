@@ -95,7 +95,7 @@ go test -v -timeout 60s ./tests/ -run TestBenchmarkLatency
 
 ## Live Validation Demo
 
-These are real outputs from a 4-node BATS cluster with the MCP bridge, tested live:
+Real outputs from a 4-node BATS cluster with the MCP bridge, tested live using **Antigravity** (Google DeepMind) as the AI coding agent:
 
 ### Test 1: Agent sends dangerous, safe-read, and safe-write commands
 
