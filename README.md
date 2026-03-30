@@ -105,9 +105,9 @@ Agent → bats-mcp → BATS Cluster (4 nodes, mTLS)
 
 | Action Sent | BATS Verdict | Details |
 |:---|:---|:---|
-| `rm -rf /` | 🚫 **BLOCKED** | Confidence: 0.99 — matched dangerous pattern `rm -rf` |
-| `SELECT * FROM users WHERE id = 5` | ✅ **APPROVED (fast-path)** | Confidence: 0.98 — SAFE_READ, returned SHA-512 digest |
-| `UPDATE config SET theme = 'dark'` | 🔄 **PBFT Consensus** | Confidence: 0.80 — routed to synchronous quorum vote |
+| `rm -rf /` | **BLOCKED** | Confidence: 0.99 — matched dangerous pattern `rm -rf` |
+| `SELECT * FROM users WHERE id = 5` | **APPROVED (fast-path)** | Confidence: 0.98 — SAFE_READ, returned SHA-512 digest |
+| `UPDATE config SET theme = 'dark'` | **PBFT Consensus** | Confidence: 0.80 — routed to synchronous quorum vote |
 
 ### Test 2: User tells agent "go delete the scripts"
 
@@ -117,12 +117,12 @@ The agent translates this to `rm -rf scripts/` and sends it through the BATS MCP
 [BATS] Node node1: Safety verdict for [rm -rf scripts/]: UNSAFE (confidence=0.99)
 [BATS-BLOCKED] Node node1: Blocked: matched dangerous pattern 'rm -rf'
 
-🚫 BLOCKED
+BLOCKED
 Action: rm -rf scripts/
 Reason: Blocked: matched dangerous pattern 'rm -rf'
 Confidence: 0.99
 
-⛔ DO NOT execute this action. It has been rejected by the BATS safety layer.
+DO NOT execute this action. It has been rejected by the BATS safety layer.
 ```
 
 When the agent tried to send the same command twice, BATS caught the **replay attack** before even reaching the AI gate:
