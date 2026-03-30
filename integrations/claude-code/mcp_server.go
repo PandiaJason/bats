@@ -129,11 +129,15 @@ func newBATSClient(addr string, insecure bool) *batsClient {
 // validate sends an action to the BATS /validate endpoint.
 func (c *batsClient) validate(action string) (map[string]interface{}, error) {
 	body, _ := json.Marshal(map[string]string{"action": action})
-	resp, err := c.httpClient.Post(
-		"https://"+c.nodeAddr+"/validate",
-		"application/json",
-		bytes.NewReader(body),
-	)
+	req, err := http.NewRequest("POST", "https://"+c.nodeAddr+"/validate", bytes.NewReader(body))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %v", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-BATS-Nonce", fmt.Sprintf("%d-%d", time.Now().UnixNano(), time.Now().UnixNano()%1000000))
+	req.Header.Set("X-BATS-Timestamp", fmt.Sprintf("%d", time.Now().Unix()))
+
+	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("BATS node unreachable at %s: %v", c.nodeAddr, err)
 	}
