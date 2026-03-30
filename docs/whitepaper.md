@@ -40,7 +40,7 @@ BATS isolates the execution environment by ensuring the following rigid safety b
 A primary bottleneck associated with PBFT encompasses scaling latencies due to $O(N^2)$ message complexity metrics. Our empirical evaluations conducted on standard 5-node environments across geographically dispersed instances yielded compelling viability. High-risk writes fully complete the PBFT state-machine replication within an average of $84$ms. Following our introduction of the heuristic fast-path bypass for deterministic memory reads, the cluster successfully processes non-mutating events with an average perceived frontend latency of $0.046$ms, thus functionally eliminating the traditional overhead of decentralized consensus layers for non-destructive operations.
 
 ### 4.1 Live Validation Results
-To empirically validate the safety pipeline, we conducted live end-to-end tests through the MCP bridge against a running 4-node BATS cluster:
+To empirically validate the safety pipeline, we conducted live end-to-end tests using **Antigravity** (Google DeepMind) as the AI coding agent, routed through the MCP bridge against a running 4-node BATS cluster:
 
 **Test 1: Multi-class action classification.** Three actions routed through `bats-mcp`:
 
