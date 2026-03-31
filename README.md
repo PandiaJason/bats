@@ -236,24 +236,34 @@ BATS ships with a native MCP (Model Context Protocol) server that lets Claude Co
 # Build the MCP server
 cd integrations/claude-code
 go build -o bats-mcp mcp_server.go
+mv bats-mcp /usr/local/bin/
 ```
 
-Add to your Claude Code or Antigravity MCP config:
+Add to your Claude Code config (`~/.claude/claude_desktop_config.json`) or Antigravity MCP config:
 
 ```json
 {
   "mcpServers": {
     "bats-safety": {
-      "command": "/path/to/bats-mcp",
+      "command": "/usr/local/bin/bats-mcp",
       "args": ["--node", "localhost:8001", "--insecure"]
     }
   }
 }
 ```
 
+> Remove `--insecure` for production. Use mTLS certs from `scripts/gen-certs.sh`.
+
+**Verify it works** -- tell your agent:
+```
+Use the validate_action tool to check: rm -rf /
+```
+
+Expected: `BLOCKED` with confidence 0.99.
+
 **Tools exposed:** `validate_action`, `check_health`, `get_audit_log`
 
-**Source:** `integrations/claude-code/`
+**Full docs:** [`integrations/claude-code/README.md`](integrations/claude-code/README.md)
 
 ---
 
