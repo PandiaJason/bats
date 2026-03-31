@@ -85,7 +85,7 @@ func NewNode(id string, port string, peers []string) *Node {
 		Peers:   peers,
 		Network: netClient,
 		WAL:     log,
-		AI:      ai.GetProvider(os.Getenv("AI_PROVIDER")),
+		AI:      ai.GetProvider(os.Getenv(strings.ToUpper(id) + "_AI_PROVIDER")),
 		pending: make(map[[64]byte]chan bool),
 	}
 
