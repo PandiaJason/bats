@@ -6,7 +6,7 @@
 <title>BATS Whitepaper -- Byzantine Agent Trust System</title>
 <meta name="description" content="Academic whitepaper: BATS provides zero-trust AI agent orchestration via PBFT consensus, heuristic safety gating, and hash-chained auditing.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Instrument+Serif:ital@0;1&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Syne:wght@400;500;600;700;800&family=Instrument+Serif:ital@0;1&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -41,8 +41,8 @@ html { scroll-behavior: smooth; font-size: 16px; }
 body {
   background: var(--bg);
   color: var(--text);
-  font-family: 'Instrument Serif', Georgia, serif;
-  line-height: 1.85;
+  font-family: 'Inter', -apple-system, sans-serif;
+  line-height: 1.9;
   transition: background 0.4s, color 0.4s;
   overflow-x: hidden;
 }
@@ -59,7 +59,7 @@ nav {
 [data-theme="light"] nav { background: rgba(250,250,248,0.9); }
 
 .nav-logo {
-  font-family: 'Syne', sans-serif; font-weight: 800; font-size: 14px;
+  font-family: 'Syne', sans-serif; font-weight: 800; font-size: 16px;
   letter-spacing: 4px; text-transform: uppercase;
   color: var(--text); text-decoration: none; opacity: 0.8;
 }
@@ -67,14 +67,14 @@ nav {
 .nav-right { display: flex; align-items: center; gap: 32px; }
 
 .nav-link {
-  font-family: 'Syne', sans-serif; font-size: 11px; font-weight: 500;
+  font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 600;
   letter-spacing: 2px; text-transform: uppercase;
   color: var(--dim); text-decoration: none; transition: color 0.3s;
 }
 .nav-link:hover { color: var(--text); }
 
 .theme-btn {
-  font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 1px;
+  font-family: 'DM Mono', monospace; font-size: 12px; letter-spacing: 1px;
   color: var(--dim); background: transparent; border: 1px solid var(--line);
   padding: 6px 14px; cursor: pointer; transition: border-color 0.3s, color 0.3s;
 }
@@ -82,7 +82,7 @@ nav {
 
 /* --- Paper --- */
 .paper {
-  max-width: 720px; margin: 0 auto; padding: 120px 24px 80px;
+  max-width: 760px; margin: 0 auto; padding: 120px 24px 80px;
 }
 
 /* --- Header --- */
@@ -122,21 +122,21 @@ nav {
   color: var(--dim); margin-bottom: 16px;
 }
 
-.abstract p { font-size: 15px; color: var(--dim); line-height: 1.8; }
+.abstract p { font-size: 16px; color: var(--text-secondary, var(--dim)); line-height: 1.85; }
 
 /* --- Sections --- */
 h2 {
-  font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 700;
+  font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 700;
   letter-spacing: -0.3px; margin-top: 56px; margin-bottom: 20px;
   padding-bottom: 10px; border-bottom: 1px solid var(--line);
 }
 
 h3 {
-  font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 600;
+  font-family: 'Syne', sans-serif; font-size: 17px; font-weight: 600;
   margin-top: 36px; margin-bottom: 14px; color: var(--accent);
 }
 
-p { margin-bottom: 18px; font-size: 16px; }
+p { margin-bottom: 20px; font-size: 17px; }
 
 section { margin-bottom: 12px; }
 
@@ -385,10 +385,12 @@ function toggleTheme() {
   document.getElementById('themeBtn').textContent = next === 'light' ? 'DARK' : 'LIGHT';
 }
 (function() {
-  const saved = localStorage.getItem('bats-theme') || 'dark';
-  document.documentElement.setAttribute('data-theme', saved);
+  const saved = localStorage.getItem('bats-theme');
+  const system = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  const theme = saved || system;
+  document.documentElement.setAttribute('data-theme', theme);
   const btn = document.getElementById('themeBtn');
-  if (btn) btn.textContent = saved === 'light' ? 'DARK' : 'LIGHT';
+  if (btn) btn.textContent = theme === 'light' ? 'DARK' : 'LIGHT';
 })();
 </script>
 </body>
