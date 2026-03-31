@@ -49,3 +49,7 @@ Thumbs.db
 # ─── Temporary / Benchmark artifacts ───
 benchmark_results.json
 dashboard.log
+
+# ─── Dead / Duplicate assets ───
+website/
+docs/hero-bg.png
