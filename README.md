@@ -14,6 +14,7 @@
     <a href="https://pandiajason.github.io/bats/">Website</a> · 
     <a href="https://pandiajason.github.io/bats/whitepaper.html">Whitepaper</a> · 
     <a href="#getting-started">Quickstart</a> · 
+    <a href="#use-bats-as-a-safety-layer-for-your-ai-agent">MCP Setup</a> · 
     <a href="#benchmarks">Benchmarks</a>
   </p>
 
@@ -204,6 +205,119 @@ go run cmd/join-tool/main.go localhost:8001 node5 8005
 ```
 
 ---
+
+## Use BATS as a Safety Layer for Your AI Agent
+
+Complete procedure to go from zero to a protected Claude Code / Antigravity session.
+
+**Prerequisites:** Go 1.24+, OpenSSL, Docker (optional)
+
+### Step 1: Clone and build
+
+```bash
+git clone https://github.com/PandiaJason/bats.git
+cd bats && go mod tidy
+```
+
+### Step 2: Generate mTLS certificates
+
+```bash
+./scripts/gen-certs.sh
+```
+
+This creates TLS certificates in `certs/` for secure node-to-node and client-to-node communication.
+
+### Step 3: Start the BATS cluster
+
+**Option A: Docker (recommended)**
+```bash
+docker compose up
+```
+
+**Option B: Bare metal** (4 separate terminals)
+```bash
+go run cmd/node/main.go node1 8001
+go run cmd/node/main.go node2 8002
+go run cmd/node/main.go node3 8003
+go run cmd/node/main.go node4 8004
+```
+
+Verify the cluster is running:
+```bash
+curl -k https://localhost:8001/status
+# Should return: node1
+```
+
+### Step 4: Build the MCP bridge binary
+
+```bash
+cd integrations/claude-code
+go build -o bats-mcp mcp_server.go
+```
+
+Move it somewhere on your PATH:
+```bash
+mv bats-mcp /usr/local/bin/
+```
+
+### Step 5: Configure your AI agent
+
+**For Claude Code** -- create or edit `~/.claude/claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "bats-safety": {
+      "command": "/usr/local/bin/bats-mcp",
+      "args": ["--node", "localhost:8001", "--insecure"]
+    }
+  }
+}
+```
+
+**For Antigravity** -- add the same JSON block to your workspace MCP config (`.gemini/settings.json` or equivalent).
+
+> Remove `--insecure` when using real mTLS certs in production.
+
+### Step 6: Restart your AI agent
+
+Close and reopen your Claude Code or Antigravity session. The agent will detect the new MCP server and gain 3 new tools:
+
+| Tool | What it does |
+|:---|:---|
+| `validate_action` | Validates any command/query through the BATS safety pipeline |
+| `check_health` | Returns the connected BATS node's liveness and cluster view |
+| `get_audit_log` | Retrieves recent entries from the tamper-evident WAL |
+
+### Step 7: Verify it works
+
+Tell your agent:
+```
+Use the validate_action tool to check: rm -rf /
+```
+
+Expected response:
+```
+BLOCKED
+
+Action: rm -rf /
+Reason: Blocked: matched dangerous pattern 'rm -rf'
+Confidence: 0.99
+
+DO NOT execute this action. It has been rejected by the BATS safety layer.
+```
+
+If you see `BLOCKED`, BATS is active. Every action your agent proposes -- file writes, shell commands, API calls -- will now pass through the Byzantine consensus cluster before execution.
+
+### Troubleshooting
+
+| Issue | Fix |
+|:---|:---|
+| `BATS node unreachable` | Make sure the cluster is running (`curl -k https://localhost:8001/status`) |
+| Agent doesn't show BATS tools | Restart your agent session after editing the MCP config |
+| `Timestamp drift exceeds 30s` | Sync your system clock (`sudo sntp -sS time.apple.com`) |
+| `Replayed nonce detected` | Normal -- BATS blocks duplicate requests. Send a fresh action. |
+
 
 ## Testing
 
