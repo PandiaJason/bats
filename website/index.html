@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BATS | The AI Safety Layer by Xs10s</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #050505;
+            --accent-color: #8b5cf6;
+            --secondary-accent: #3b82f6;
+            --text-main: #f8fafc;
+            --text-dim: #94a3b8;
+            --glass-bg: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: var(--bg-color);
+            color: var(--text-main);
+            font-family: 'Outfit', sans-serif;
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+
+        .hero-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background: linear-gradient(rgba(5, 5, 5, 0.7), rgba(5, 5, 5, 0.9)), url('hero-bg.png');
+            background-size: cover;
+            background-position: center;
+            opacity: 0.8;
+        }
+
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 2rem 10%;
+            position: absolute;
+            width: 100%;
+            top: 0;
+            z-index: 10;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            letter-spacing: 2px;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo span {
+            color: var(--accent-color);
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+        }
+
+        .nav-links a {
+            color: var(--text-dim);
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: 0.3s;
+        }
+
+        .nav-links a:hover {
+            color: var(--text-main);
+        }
+
+        .hero {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 0 10%;
+        }
+
+        .badge {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            padding: 8px 16px;
+            border-radius: 100px;
+            font-size: 0.75rem;
+            letter-spacing: 1px;
+            color: var(--accent-color);
+            margin-bottom: 2rem;
+            backdrop-filter: blur(10px);
+        }
+
+        h1 {
+            font-size: 4.5rem;
+            font-weight: 700;
+            max-width: 900px;
+            margin-bottom: 1.5rem;
+            background: linear-gradient(to bottom, #fff 40%, rgba(255,255,255,0.4));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            line-height: 1.1;
+        }
+
+        .subtitle {
+            font-size: 1.25rem;
+            color: var(--text-dim);
+            max-width: 600px;
+            margin-bottom: 3rem;
+        }
+
+        .cta-group {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .btn {
+            padding: 16px 32px;
+            border-radius: 8px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: 0.3s;
+            cursor: pointer;
+        }
+
+        .btn-primary {
+            background: var(--accent-color);
+            color: white;
+            box-shadow: 0 0 20px rgba(139, 92, 246, 0.4);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 30px rgba(139, 92, 246, 0.6);
+        }
+
+        .btn-secondary {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            color: var(--text-main);
+            backdrop-filter: blur(10px);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255,255,255,0.1);
+        }
+
+        .section {
+            padding: 100px 10%;
+            background: var(--bg-color);
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2rem;
+            margin-top: 4rem;
+        }
+
+        .card {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            padding: 3rem;
+            border-radius: 16px;
+            transition: 0.3s;
+            backdrop-filter: blur(10px);
+        }
+
+        .card:hover {
+            border-color: var(--accent-color);
+            transform: translateY(-5px);
+        }
+
+        .card h3 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .card p {
+            color: var(--text-dim);
+            font-size: 0.95rem;
+        }
+
+        .integration-preview {
+            margin-top: 100px;
+            background: #000;
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 40px;
+            text-align: left;
+            position: relative;
+        }
+
+        .code-block {
+            background: #0a0a0a;
+            padding: 20px;
+            border-radius: 10px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            color: #d1d5db;
+            border: 1px solid #1f2937;
+            overflow-x: auto;
+        }
+
+        .footer {
+            padding: 60px 10%;
+            text-align: center;
+            border-top: 1px solid var(--glass-border);
+        }
+
+        .xs10s-logo {
+            font-weight: 600;
+            color: var(--text-dim);
+            font-size: 0.8rem;
+            letter-spacing: 2px;
+            margin-top: 20px;
+        }
+
+        @media (max-width: 768px) {
+            h1 { font-size: 3rem; }
+            .grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="hero-bg"></div>
+    
+    <nav>
+        <div class="logo">BATS<span>.</span></div>
+        <div class="nav-links">
+            <a href="#features">FEATURES</a>
+            <a href="#integrations">INTEGRATIONS</a>
+            <a href="https://github.com/PandiaJason/bats">GITHUB</a>
+        </div>
+    </nav>
+
+    <div class="hero">
+        <div class="badge">V1.4 BETA RESEARCH RELEASE</div>
+        <h1>Zero-Trust Safety for the Autonomous World.</h1>
+        <p class="subtitle">BATS is the deterministic integrity layer for AI agents. Validate every action before execution using Byzantine-resilient consensus.</p>
+        <div class="cta-group">
+            <a href="#integrations" class="btn btn-primary">GET STARTED</a>
+            <a href="https://github.com/PandiaJason/bats" class="btn btn-secondary">VIEW CORE</a>
+        </div>
+    </div>
+
+    <section id="features" class="section">
+        <h2 style="font-size: 2.5rem; text-align: center;">Byzantine Intelligence.</h2>
+        <div class="grid">
+            <div class="card">
+                <h3>Council of Agents</h3>
+                <p>Diversified consensus across OpenAI, Anthropic, and Gemini. Hallucinations are filtered as protocol faults.</p>
+            </div>
+            <div class="card">
+                <h3>Synchronous Edge</h3>
+                <p>Deterministic validation for n8n and industrial automation. Sub-second safety gates for every action.</p>
+            </div>
+            <div class="card">
+                <h3>Cryptographic Proof</h3>
+                <p>Every decision is signed with Ed25519 identities and committed to a tamper-proof write-ahead log.</p>
+            </div>
+        </div>
+    </section>
+
+    <section id="integrations" class="section" style="background: #050505;">
+        <h2 style="font-size: 2.5rem; text-align: center;">The Safety Gate for n8n.</h2>
+        <div class="integration-preview">
+            <div class="code-block">
+// BATS Safety Gate for n8n
+POST https://bats.xs10s.network/validate
+{
+  "action": "TRANSFER_50000",
+  "context": "n8n_automated_payout"
+}
+
+// BATS Cluster Response
+{
+  "approved": false,
+  "reason": "Byzantine Quorum Failed (Model Drift Detected)"
+}
+            </div>
+            <p style="margin-top: 20px; color: var(--text-dim);">Integrate BATS into your existing workflows in seconds. Prevent catastrophic AI failures before they cost you.</p>
+        </div>
+    </section>
+
+    <div class="footer">
+        <div class="xs10s-logo">POWERED BY XS10S INFRASTRUCTURE</div>
+        <p style="margin-top: 20px; color: #444; font-size: 0.75rem;">&copy; 2026 BATS | RESEARCH ARCHITECTURE</p>
+    </div>
+</body>
+</html>
