@@ -74,6 +74,18 @@ Agent Proposal → AI Safety Gate → Consensus Router → WAL Commit
 - **Stage 1 — Heuristic Gate:** Structured `SafetyVerdict` with numeric confidence score. If `UNSAFE`, blocked immediately.
 - **Stage 2 — Consensus Router:** `SAFE_READ` with confidence ≥0.95 → optimistic fast-path. All writes → synchronous PBFT with 2f+1 quorum.
 
+### Architecture Diagram
+
+<p align="center"><img src="docs/bats_architecture.png" alt="BATS Architecture" width="700"></p>
+
+### Validation Flow
+
+<p align="center"><img src="docs/bats_flow.png" alt="BATS Validation Flow" width="600"></p>
+
+### System Topology
+
+<p align="center"><img src="docs/bats_system.png" alt="BATS System Topology" width="700"></p>
+
 ---
 
 ## Benchmarks

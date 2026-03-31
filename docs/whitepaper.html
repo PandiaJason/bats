@@ -259,6 +259,11 @@ footer a:hover { color: var(--text); }
 
     <h3>2.2 Tamper-Evident Hash-Chained Auditing</h3>
     <p>Compliance and post-mortem analyses require mathematically rigid non-repudiation. BATS replaces arbitrary logging vectors with a hash-chained Write-Ahead Log (WAL). Each transaction is sequentially chained utilizing <span class="math">SHA-256(PrevHash + Data)</span>. If an adversary gains shell access and attempts to erase an illicit command execution, the hash chain instantly breaks, mathematically confirming the breach [4].</p>
+
+    <h3>2.3 Diagrams</h3>
+    <p style="text-align:center; margin:32px 0;"><img src="bats_architecture.png" alt="BATS Architecture Diagram" style="max-width:100%; border:1px solid var(--line); border-radius:6px;"></p>
+    <p style="text-align:center; margin:32px 0;"><img src="bats_flow.png" alt="BATS Validation Flow" style="max-width:100%; border:1px solid var(--line); border-radius:6px;"></p>
+    <p style="text-align:center; margin:32px 0;"><img src="bats_system.png" alt="BATS System Topology" style="max-width:100%; border:1px solid var(--line); border-radius:6px;"></p>
   </section>
 
   <section>
