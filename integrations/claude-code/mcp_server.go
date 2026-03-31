@@ -355,7 +355,7 @@ func (s *mcpServer) handleToolCall(id json.RawMessage, params *callToolParams) {
 		result, err := s.bats.validate(args.Action)
 		if err != nil {
 			s.respond(id, callToolResult{
-				Content: []textContent{{Type: "text", Text: fmt.Sprintf("⚠ BATS node error: %v\n\nThe BATS safety node is unreachable. Action was NOT validated.", err)}},
+				Content: []textContent{{Type: "text", Text: fmt.Sprintf("BATS NODE ERROR: %v\n\nThe BATS safety node is unreachable. Action was NOT validated.", err)}},
 				IsError: true,
 			})
 			return
@@ -369,7 +369,7 @@ func (s *mcpServer) handleToolCall(id json.RawMessage, params *callToolParams) {
 
 		var sb strings.Builder
 		if approved {
-			sb.WriteString("✅ APPROVED")
+			sb.WriteString("APPROVED")
 			if fastPath {
 				sb.WriteString(" (fast-path)")
 			} else {
@@ -380,11 +380,11 @@ func (s *mcpServer) handleToolCall(id json.RawMessage, params *callToolParams) {
 			sb.WriteString(fmt.Sprintf("\nDigest: %s", digest))
 			sb.WriteString("\n\nThis action has been validated by BATS and is safe to execute.")
 		} else {
-			sb.WriteString("🚫 BLOCKED")
+			sb.WriteString("BLOCKED")
 			sb.WriteString(fmt.Sprintf("\n\nAction: %s", args.Action))
 			sb.WriteString(fmt.Sprintf("\nReason: %s", reason))
 			sb.WriteString(fmt.Sprintf("\nConfidence: %.2f", confidence))
-			sb.WriteString("\n\n⛔ DO NOT execute this action. It has been rejected by the BATS safety layer.")
+			sb.WriteString("\n\nDO NOT execute this action. It has been rejected by the BATS safety layer.")
 		}
 
 		s.respond(id, callToolResult{
