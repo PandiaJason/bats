@@ -1,636 +1,1097 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BATS — Byzantine Agent Trust System | Zero-Trust AI Safety Layer</title>
-    <meta name="description" content="BATS is a zero-trust consensus-driven safety layer for autonomous AI agents. Sub-millisecond reads, 6.5ms PBFT writes, Byzantine fault tolerance.">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --bg: #06080f;
-            --surface: #0c1018;
-            --surface-2: #111827;
-            --border: rgba(255,255,255,0.06);
-            --border-hover: rgba(139,92,246,0.4);
-            --text: #f1f5f9;
-            --text-dim: #94a3b8;
-            --text-muted: #64748b;
-            --accent: #8b5cf6;
-            --accent-glow: rgba(139,92,246,0.15);
-            --blue: #3b82f6;
-            --green: #10b981;
-            --red: #ef4444;
-            --amber: #f59e0b;
-            --cyan: #06b6d4;
-        }
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        html { scroll-behavior: smooth; }
-        body { background: var(--bg); color: var(--text); font-family: 'Inter', system-ui, sans-serif; line-height: 1.7; overflow-x: hidden; transition: background 0.3s, color 0.3s; }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BATS — Byzantine Agent Trust System</title>
+<meta name="description" content="Zero-trust consensus layer for autonomous AI agents. Stop unsafe actions before they execute.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Instrument+Serif:ital@0;1&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
-        /* ─── Light Theme ─── */
-        [data-theme="light"] {
-            --bg: #f8fafc;
-            --surface: #ffffff;
-            --surface-2: #f1f5f9;
-            --border: rgba(0,0,0,0.08);
-            --border-hover: rgba(139,92,246,0.4);
-            --text: #0f172a;
-            --text-dim: #475569;
-            --text-muted: #94a3b8;
-            --accent: #7c3aed;
-            --accent-glow: rgba(124,58,237,0.08);
-        }
-        [data-theme="light"] .bg-hero { opacity: 0.15; }
-        [data-theme="light"] .code-block { background: #f1f5f9; border-color: rgba(0,0,0,0.08); color: #334155; }
-        [data-theme="light"] .code-block .comment { color: #94a3b8; }
-        [data-theme="light"] .code-block .cmd { color: #059669; }
-        [data-theme="light"] nav { background: rgba(248,250,252,0.9); }
-        [data-theme="light"] .hero h1 { background: linear-gradient(180deg, #0f172a 30%, rgba(15,23,42,0.5)); -webkit-background-clip: text; background-clip: text; }
-        [data-theme="light"] .feature-icon svg, [data-theme="light"] .threat-icon svg { opacity: 0.85; }
-
-        /* ─── Premium Background ─── */
-        .bg-hero {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0;
-            background: var(--bg);
-        }
-        [data-theme="light"] .bg-hero { background: #fafbfc; }
-        .bg-glow {
-            position: fixed; width: 100%; height: 700px;
-            background: radial-gradient(ellipse 80% 50% at 50% 0%, rgba(139,92,246,0.08) 0%, transparent 100%);
-            top: 0; left: 0;
-            z-index: 0; pointer-events: none;
-        }
-        [data-theme="light"] .bg-glow {
-            background: radial-gradient(ellipse 80% 50% at 50% 0%, rgba(124,58,237,0.05) 0%, transparent 100%);
-        }
-        @keyframes float { 0%,100% { transform: translateX(-50%) translateY(0); } 50% { transform: translateX(-50%) translateY(20px); } }
-
-        /* ─── Layout ─── */
-        .container { max-width: 1200px; margin: 0 auto; padding: 0 24px; position: relative; z-index: 1; }
-
-        /* ─── Nav ─── */
-        nav {
-            position: fixed; top: 0; width: 100%; z-index: 100;
-            background: rgba(6,8,15,0.85); backdrop-filter: blur(20px) saturate(180%);
-            border-bottom: 1px solid var(--border);
-        }
-        .nav-inner { display: flex; justify-content: space-between; align-items: center; padding: 16px 24px; max-width: 1200px; margin: 0 auto; }
-        .nav-brand { font-weight: 800; font-size: 18px; letter-spacing: 1.5px; display: flex; align-items: center; gap: 8px; }
-        .nav-brand .dot { color: var(--accent); }
-        .nav-links { display: flex; gap: 32px; align-items: center; }
-        .nav-links a { color: var(--text-muted); text-decoration: none; font-size: 13px; font-weight: 500; letter-spacing: 0.5px; transition: color 0.2s; }
-        .nav-links a:hover { color: var(--text); }
-        .nav-github { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; color: var(--text) !important; font-size: 13px !important; transition: border-color 0.2s, background 0.2s; }
-        .nav-github:hover { border-color: var(--border-hover); background: rgba(139,92,246,0.08); }
-        .nav-github svg { width: 16px; height: 16px; fill: currentColor; }
-        .theme-toggle { background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; cursor: pointer; color: var(--text); display: inline-flex; align-items: center; transition: border-color 0.2s; }
-        .theme-toggle:hover { border-color: var(--border-hover); }
-        .theme-toggle svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-
-        /* ─── Hero ─── */
-        .hero { padding: 180px 0 120px; text-align: center; }
-        .hero-version {
-            display: inline-flex; align-items: center; gap: 8px;
-            padding: 6px 16px; border-radius: 100px; font-size: 12px; font-weight: 600;
-            letter-spacing: 1px; color: var(--accent); margin-bottom: 32px;
-            background: var(--accent-glow); border: 1px solid rgba(139,92,246,0.2);
-        }
-        .hero-version .pulse { width: 6px; height: 6px; border-radius: 50%; background: var(--green); animation: pulse 2s infinite; }
-        @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
-        .hero h1 { font-size: clamp(42px, 6vw, 72px); font-weight: 800; line-height: 1.05; max-width: 800px; margin: 0 auto 24px; letter-spacing: -2px; background: linear-gradient(180deg, #fff 30%, rgba(255,255,255,0.4)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
-        .hero-sub { font-size: 18px; color: var(--text-dim); max-width: 560px; margin: 0 auto 48px; line-height: 1.7; }
-        .hero-cta { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
-        .btn { padding: 14px 28px; border-radius: 10px; font-weight: 600; font-size: 14px; text-decoration: none; transition: all 0.2s; cursor: pointer; border: none; display: inline-flex; align-items: center; gap: 8px; }
-        .btn-primary { background: var(--accent); color: #fff; box-shadow: 0 0 24px rgba(139,92,246,0.3), inset 0 1px 0 rgba(255,255,255,0.15); }
-        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 0 40px rgba(139,92,246,0.5), inset 0 1px 0 rgba(255,255,255,0.15); }
-        .btn-ghost { background: transparent; color: var(--text); border: 1px solid var(--border); }
-        .btn-ghost:hover { border-color: var(--border-hover); background: var(--accent-glow); }
-
-        /* ─── Stats Bar ─── */
-        .stats-bar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--border); border-radius: 16px; overflow: hidden; margin: 80px auto 0; max-width: 900px; }
-        .stat { background: var(--surface); padding: 28px; text-align: center; }
-        .stat-value { font-family: 'JetBrains Mono', monospace; font-size: 28px; font-weight: 700; color: var(--accent); }
-        .stat-value.green { color: var(--green); }
-        .stat-value.cyan { color: var(--cyan); }
-        .stat-value.amber { color: var(--amber); }
-        .stat-label { font-size: 12px; color: var(--text-muted); margin-top: 6px; letter-spacing: 0.5px; text-transform: uppercase; }
-
-        /* ─── Sections ─── */
-        .section { padding: 120px 0; }
-        .section-label { font-size: 12px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; color: var(--accent); margin-bottom: 12px; }
-        .section-title { font-size: clamp(28px, 4vw, 40px); font-weight: 700; letter-spacing: -1px; margin-bottom: 16px; }
-        .section-desc { color: var(--text-dim); max-width: 600px; font-size: 16px; margin-bottom: 48px; }
-        .section-desc.center { text-align: center; margin-left: auto; margin-right: auto; }
-
-        /* ─── Feature Cards ─── */
-        .features-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
-        .feature-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 32px; transition: border-color 0.3s, transform 0.3s; }
-        .feature-card:hover { border-color: var(--border-hover); transform: translateY(-4px); }
-        .feature-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-bottom: 20px; background: rgba(255,255,255,0.04); border: 1px solid var(--border); }
-        .feature-icon svg { width: 20px; height: 20px; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; fill: none; stroke: var(--text-muted); }
-        [data-theme="light"] .feature-icon { background: rgba(0,0,0,0.03); }
-        .feature-icon.purple, .feature-icon.blue, .feature-icon.green, .feature-icon.red, .feature-icon.cyan, .feature-icon.amber { background: rgba(255,255,255,0.04); }
-        .feature-icon.purple svg, .feature-icon.blue svg, .feature-icon.green svg, .feature-icon.red svg, .feature-icon.cyan svg, .feature-icon.amber svg { stroke: var(--text-muted); }
-        .feature-card h3 { font-size: 16px; font-weight: 600; margin-bottom: 8px; }
-        .feature-card p { font-size: 14px; color: var(--text-dim); line-height: 1.6; }
-
-        /* ─── Architecture ─── */
-        .arch-flow { display: flex; align-items: center; gap: 0; justify-content: center; flex-wrap: wrap; margin-top: 48px; }
-        .arch-step { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px 24px; text-align: center; min-width: 160px; }
-        .arch-step .step-num { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--accent); margin-bottom: 6px; font-weight: 700; }
-        .arch-step h4 { font-size: 14px; margin-bottom: 4px; }
-        .arch-step p { font-size: 12px; color: var(--text-muted); }
-        .arch-arrow { color: var(--text-muted); font-size: 20px; margin: 0 8px; }
-
-        /* ─── Benchmark ─── */
-        .bench-table { width: 100%; border-collapse: collapse; background: var(--surface); border-radius: 12px; overflow: hidden; border: 1px solid var(--border); }
-        .bench-table th, .bench-table td { padding: 16px 24px; text-align: left; border-bottom: 1px solid var(--border); font-size: 14px; }
-        .bench-table th { background: rgba(255,255,255,0.03); color: var(--text-muted); font-size: 12px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; }
-        .bench-table td { font-family: 'JetBrains Mono', monospace; font-size: 13px; }
-        .bench-table td:first-child { font-family: 'Inter', sans-serif; font-weight: 500; color: var(--text); }
-        .bench-table tr:last-child td { border-bottom: none; }
-        .val-green { color: var(--green); font-weight: 600; }
-        .val-blue { color: var(--blue); font-weight: 600; }
-        .val-red { color: var(--red); font-weight: 600; }
-
-        /* ─── Code Block ─── */
-        .code-block { background: rgba(0,0,0,0.4); border: 1px solid var(--border); border-radius: 12px; padding: 24px; font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #d1d5db; overflow-x: auto; line-height: 1.8; }
-        .code-block .comment { color: var(--text-muted); }
-        .code-block .cmd { color: var(--green); }
-        .code-block .flag { color: var(--accent); }
-
-        /* ─── Quickstart Grid ─── */
-        .qs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
-        .qs-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 32px; }
-        .qs-card .qs-num { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--accent); font-weight: 700; margin-bottom: 12px; }
-        .qs-card h3 { font-size: 18px; margin-bottom: 8px; }
-        .qs-card p { font-size: 14px; color: var(--text-dim); margin-bottom: 16px; }
-
-        /* ─── Threat Table ─── */
-        .threat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-        .threat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 24px; display: flex; gap: 16px; align-items: flex-start; }
-        .threat-card .threat-icon { width: 36px; height: 36px; border-radius: 8px; background: rgba(239,68,68,0.1); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-        .threat-card .threat-icon svg { width: 18px; height: 18px; stroke: var(--red); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-        .threat-card h4 { font-size: 14px; margin-bottom: 4px; }
-        .threat-card p { font-size: 13px; color: var(--text-dim); }
-
-        /* ─── Footer ─── */
-        footer { padding: 60px 0; border-top: 1px solid var(--border); text-align: center; }
-        footer .footer-brand { font-weight: 700; letter-spacing: 1px; margin-bottom: 8px; }
-        footer p { font-size: 13px; color: var(--text-muted); }
-        footer a { color: var(--text-dim); text-decoration: none; transition: color 0.2s; }
-        footer a:hover { color: var(--accent); }
-
-        /* ─── Responsive: Tablet (≤1024px) ─── */
-        @media (max-width: 1024px) {
-            .features-grid { grid-template-columns: repeat(2, 1fr); }
-            .hero h1 { font-size: 42px; }
-            .stats-bar { grid-template-columns: repeat(2, 1fr); }
-            .arch-flow { flex-wrap: wrap; gap: 8px; }
-        }
-
-        /* ─── Responsive: Mobile (≤768px) ─── */
-        @media (max-width: 768px) {
-            .container { padding: 0 16px; }
-            .nav-links a:not(.nav-github) { display: none; }
-            .nav-inner { padding: 12px 16px; }
-            .hero { padding: 140px 0 80px; }
-            .hero h1 { font-size: 32px; letter-spacing: -1px; }
-            .hero-sub { font-size: 15px; margin-bottom: 32px; }
-            .hero-cta { flex-direction: column; align-items: center; }
-            .btn { width: 100%; max-width: 280px; text-align: center; justify-content: center; }
-            .stats-bar { grid-template-columns: 1fr 1fr; margin-top: 48px; }
-            .stat { padding: 20px 16px; }
-            .stat-value { font-size: 22px; }
-            .section { padding: 80px 0; }
-            .section-title { font-size: 26px; }
-            .section-desc { font-size: 14px; }
-            .features-grid, .qs-grid, .threat-grid { grid-template-columns: 1fr; }
-            [style*="repeat(3"] { grid-template-columns: 1fr !important; }
-            .feature-card { padding: 24px; }
-            .arch-flow { flex-direction: column; align-items: center; }
-            .arch-arrow { transform: rotate(90deg); margin: 4px 0; }
-            .arch-step { width: 100%; max-width: 300px; }
-            .bench-table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
-            .bench-table th, .bench-table td { padding: 12px 14px; white-space: nowrap; font-size: 12px; }
-            .code-block { padding: 16px; font-size: 12px; }
-            .qs-card { padding: 24px; }
-            .threat-card { padding: 16px; }
-        }
-
-        /* ─── Responsive: Small Mobile (≤480px) ─── */
-        @media (max-width: 480px) {
-            .hero { padding: 120px 0 60px; }
-            .hero h1 { font-size: 26px; }
-            .hero-sub { font-size: 14px; }
-            .hero-version { font-size: 10px; padding: 5px 12px; }
-            .stats-bar { grid-template-columns: 1fr 1fr; gap: 1px; }
-            .stat-value { font-size: 18px; }
-            .stat-label { font-size: 10px; }
-            .section-title { font-size: 22px; }
-            .nav-github span { display: none; }
-            .code-block { font-size: 11px; padding: 12px; line-height: 1.6; }
-        }
-
-        /* ─── Touch-friendly tap targets ─── */
-        @media (hover: none) and (pointer: coarse) {
-            .btn { min-height: 48px; }
-            .nav-links a { min-height: 44px; display: flex; align-items: center; }
-            .theme-toggle { min-width: 44px; min-height: 44px; }
-        }
-    </style>
-</head>
-<body>
-<div class="bg-hero"></div>
-<div class="bg-glow"></div>
-
-<!-- ─── Nav ─── -->
-<nav>
-    <div class="nav-inner">
-        <div class="nav-brand">BATS<span class="dot">.</span></div>
-        <div class="nav-links">
-            <a href="#architecture">Architecture</a>
-            <a href="#benchmarks">Benchmarks</a>
-            <a href="#quickstart">Quickstart</a>
-            <a href="#security">Security</a>
-            <a href="https://github.com/PandiaJason/bats" class="nav-github">
-                <svg viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
-                GitHub
-            </a>
-            <button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle theme">
-                <svg class="icon-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
-            </button>
-        </div>
-    </div>
-</nav>
-
-<!-- ─── Hero ─── -->
-<div class="hero container">
-    <div class="hero-version"><span class="pulse"></span> V3.2 ENTERPRISE</div>
-    <h1>Stop unsafe AI actions before they execute.</h1>
-    <p class="hero-sub">BATS is a zero-trust consensus layer that validates every AI agent action through Byzantine fault-tolerant quorum. Sub-millisecond reads. Full PBFT writes in 6.5ms.</p>
-    <div class="hero-cta">
-        <a href="#quickstart" class="btn btn-primary">Get Started</a>
-        <a href="https://github.com/PandiaJason/bats" class="btn btn-ghost">View Source</a>
-        <a href="whitepaper.html" class="btn btn-ghost">Read Paper</a>
-    </div>
-
-    <div class="stats-bar">
-        <div class="stat"><div class="stat-value">675µs</div><div class="stat-label">Read Latency (p50)</div></div>
-        <div class="stat"><div class="stat-value green">6.5ms</div><div class="stat-label">Write Latency (p50)</div></div>
-        <div class="stat"><div class="stat-value cyan">4</div><div class="stat-label">Node PBFT Cluster</div></div>
-        <div class="stat"><div class="stat-value amber">100%</div><div class="stat-label">Adversarial Block Rate</div></div>
-    </div>
-</div>
-
-<!-- ─── Features ─── -->
-<section class="section container">
-    <div class="section-label">Capabilities</div>
-    <div class="section-title">Enterprise-grade AI safety primitives.</div>
-    <div class="section-desc">Every feature designed to prevent autonomous agents from causing irreversible damage.</div>
-
-    <div class="features-grid">
-        <div class="feature-card">
-            <div class="feature-icon purple"><svg viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></div>
-            <h3>Optimistic Fast-Path</h3>
-            <p>Non-mutating reads bypass PBFT entirely at 675µs. Background consensus maintains audit trail integrity without blocking the caller.</p>
-        </div>
-        <div class="feature-card">
-            <div class="feature-icon green"><svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></div>
-            <h3>Hash-Chained WAL</h3>
-            <p>Every entry computes SHA-256(PrevHash + Data) creating a tamper-evident chain. Exportable to JSON/CSV for SOC2 compliance audits.</p>
-        </div>
-        <div class="feature-card">
-            <div class="feature-icon blue"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
-            <h3>AI Heuristic Safety Gate</h3>
-            <p>Structured SafetyVerdict with numeric confidence scores. Dangerous patterns (rm -rf, DROP TABLE) blocked in 368µs before consensus.</p>
-        </div>
-        <div class="feature-card">
-            <div class="feature-icon red"><svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
-            <h3>Replay Attack Prevention</h3>
-            <p>Mandatory X-BATS-Nonce and temporal envelope validation (±30s drift window) on every protected endpoint.</p>
-        </div>
-        <div class="feature-card">
-            <div class="feature-icon cyan"><svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg></div>
-            <h3>One-Command Docker Cluster</h3>
-            <p>docker compose up boots a full 4-node mTLS cluster with health checks, auto-generated certs, and optional live dashboard.</p>
-        </div>
-        <div class="feature-card">
-            <div class="feature-icon amber"><svg viewBox="0 0 24 24"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg></div>
-            <h3>Live Control Plane</h3>
-            <p>Real-time dashboard at :9000 showing node health, consensus rounds, blocked action counters, and an interactive test panel.</p>
-        </div>
-    </div>
-</section>
-
-<!-- ─── Architecture ─── -->
-<section id="architecture" class="section container" style="border-top: 1px solid var(--border);">
-    <div class="section-label">Architecture</div>
-    <div class="section-title">How BATS validates an action.</div>
-    <div class="section-desc">Every AI-proposed action passes through a two-stage pipeline before touching production infrastructure.</div>
-
-    <div class="arch-flow">
-        <div class="arch-step">
-            <div class="step-num">01</div>
-            <h4>Agent Proposal</h4>
-            <p>REST/QUIC to leader</p>
-        </div>
-        <div class="arch-arrow">→</div>
-        <div class="arch-step">
-            <div class="step-num">02</div>
-            <h4>Safety Heuristic</h4>
-            <p>AI confidence scoring</p>
-        </div>
-        <div class="arch-arrow">→</div>
-        <div class="arch-step" style="border-color: var(--green);">
-            <div class="step-num" style="color: var(--green);">03a</div>
-            <h4>Fast-Path</h4>
-            <p>≥0.95 conf → 675µs</p>
-        </div>
-        <div class="arch-arrow">→</div>
-        <div class="arch-step" style="border-color: var(--blue);">
-            <div class="step-num" style="color: var(--blue);">03b</div>
-            <h4>PBFT Consensus</h4>
-            <p>2f+1 quorum → 6.5ms</p>
-        </div>
-        <div class="arch-arrow">→</div>
-        <div class="arch-step">
-            <div class="step-num">04</div>
-            <h4>WAL Commit</h4>
-            <p>SHA-256 hash chain</p>
-        </div>
-    </div>
-</section>
-
-<!-- ─── Benchmarks ─── -->
-<section id="benchmarks" class="section container" style="border-top: 1px solid var(--border);">
-    <div class="section-label">Performance</div>
-    <div class="section-title">Real cluster benchmarks. No mocks.</div>
-    <div class="section-desc">Measured on a 4-node local cluster over mTLS HTTP/2 with TLS warmup for steady-state accuracy.</div>
-
-    <table class="bench-table" style="max-width: 800px; margin: 0 auto;">
-        <thead>
-            <tr>
-                <th>Action Type</th>
-                <th>p50</th>
-                <th>p95</th>
-                <th>p99</th>
-                <th>Verdict</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr>
-                <td>SAFE_READ (Fast Bypass)</td>
-                <td class="val-green">675µs</td>
-                <td class="val-green">1.76ms</td>
-                <td class="val-green">1.76ms</td>
-                <td>Optimistic Approval</td>
-            </tr>
-            <tr>
-                <td>SAFE Write (Sync PBFT)</td>
-                <td class="val-blue">6.5ms</td>
-                <td class="val-blue">7.8ms</td>
-                <td class="val-blue">7.8ms</td>
-                <td>Full Quorum Commit</td>
-            </tr>
-            <tr>
-                <td>UNSAFE (Immediate Reject)</td>
-                <td class="val-red">368µs</td>
-                <td class="val-red">525µs</td>
-                <td class="val-red">525µs</td>
-                <td style="color: var(--red); font-family: 'Inter'; font-weight: 600;">BLOCKED</td>
-            </tr>
-        </tbody>
-    </table>
-
-    <p style="text-align: center; color: var(--text-muted); font-size: 13px; margin-top: 16px;">
-        Run yourself: <code style="background: var(--surface-2); padding: 3px 8px; border-radius: 4px; font-family: 'JetBrains Mono'; font-size: 12px;">go test -v -timeout 60s ./tests/ -run TestBenchmarkLatency</code>
-    </p>
-</section>
-
-<!-- ─── Quickstart ─── -->
-<section id="quickstart" class="section container" style="border-top: 1px solid var(--border);">
-    <div class="section-label">Getting Started</div>
-    <div class="section-title">Deploy in 60 seconds.</div>
-    <div class="section-desc">Choose your path: Docker or bare metal.</div>
-
-    <div class="qs-grid">
-        <div class="qs-card">
-            <div class="qs-num">Option A</div>
-            <h3>Docker (recommended)</h3>
-            <p>Full 4-node cluster with mTLS, health checks, and optional dashboard.</p>
-            <div class="code-block">
-<span class="comment"># Generate certificates</span>
-<span class="cmd">./scripts/gen-certs.sh</span>
-
-<span class="comment"># Boot the cluster</span>
-<span class="cmd">docker compose up</span>
-
-<span class="comment"># With dashboard</span>
-<span class="cmd">docker compose --profile dashboard up</span></div>
-        </div>
-        <div class="qs-card">
-            <div class="qs-num">Option B</div>
-            <h3>Bare Metal</h3>
-            <p>Run nodes directly with Go 1.24+ for development and debugging.</p>
-            <div class="code-block">
-<span class="comment"># Clone and build</span>
-<span class="cmd">git clone</span> https://github.com/PandiaJason/bats.git
-<span class="cmd">cd</span> bats && <span class="cmd">go mod tidy</span>
-
-<span class="comment"># Start 4-node cluster</span>
-<span class="cmd">go run</span> cmd/node/main.go node1 8001 <span class="flag">&</span>
-<span class="cmd">go run</span> cmd/node/main.go node2 8002 <span class="flag">&</span>
-<span class="cmd">go run</span> cmd/node/main.go node3 8003 <span class="flag">&</span>
-<span class="cmd">go run</span> cmd/node/main.go node4 8004 <span class="flag">&</span></div>
-        </div>
-    </div>
-</section>
-
-<!-- ─── Security ─── -->
-<section id="security" class="section container" style="border-top: 1px solid var(--border);">
-    <div class="section-label">Security Model</div>
-    <div class="section-title">Built for the OWASP Top 10 for LLMs.</div>
-    <div class="section-desc">Mathematically provable mitigations against the most critical AI threat vectors.</div>
-
-    <div class="threat-grid">
-        <div class="threat-card">
-            <div class="threat-icon"><svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
-            <div>
-                <h4>Agent Hallucinations</h4>
-                <p>Multi-model PBFT cross-voting rejects fabricated outputs before they reach production.</p>
-            </div>
-        </div>
-        <div class="threat-card">
-            <div class="threat-icon"><svg viewBox="0 0 24 24"><path d="M12 22V8"/><path d="M5 12H2a10 10 0 0 0 20 0h-3"/><circle cx="12" cy="5" r="3"/></svg></div>
-            <div>
-                <h4>Prompt Injections</h4>
-                <p>Pre-consensus heuristic safety gate pattern-matches and blocks malicious payloads in &lt;500µs.</p>
-            </div>
-        </div>
-        <div class="threat-card">
-            <div class="threat-icon"><svg viewBox="0 0 24 24"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg></div>
-            <div>
-                <h4>Byzantine Node Compromise</h4>
-                <p>Tolerates up to f actively malicious nodes (f = ⌊(N-1)/3⌋) with Ed25519-signed consensus.</p>
-            </div>
-        </div>
-        <div class="threat-card">
-            <div class="threat-icon"><svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg></div>
-            <div>
-                <h4>Replay Attacks</h4>
-                <p>Mandatory nonce + timestamp validation (±30s) with automatic nonce deduplication.</p>
-            </div>
-        </div>
-    </div>
-</section>
-
-<!-- ─── Live Demo ─── -->
-<section class="section container" style="border-top: 1px solid var(--border);">
-    <div class="section-label">Live Demo</div>
-    <div class="section-title">Real-time validation results.</div>
-    <div class="section-desc">Tested live using <strong>Antigravity</strong> (Google DeepMind) as the AI agent against a 4-node BATS cluster.</div>
-
-    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-top: 24px;">
-        <div class="qs-card">
-            <h3 style="color: var(--accent);">Test 1: Multi-Class Commands</h3>
-            <p style="margin-bottom: 16px;">Three actions sent through <code style="color:var(--green);">bats-mcp</code> → BATS cluster:</p>
-            <div style="font-family:'JetBrains Mono',monospace; font-size: 13px; line-height: 2;">
-                <div style="display:flex; justify-content:space-between; padding:4px 0; border-bottom:1px solid var(--border);">
-                    <span>rm -rf /</span>
-                    <span style="color:var(--red); font-weight:700;">BLOCKED (0.99)</span>
-                </div>
-                <div style="display:flex; justify-content:space-between; padding:4px 0; border-bottom:1px solid var(--border);">
-                    <span>SELECT * WHERE id=5</span>
-                    <span style="color:var(--green); font-weight:700;">APPROVED (0.98)</span>
-                </div>
-                <div style="display:flex; justify-content:space-between; padding:4px 0;">
-                    <span>UPDATE config SET...</span>
-                    <span style="color:var(--blue); font-weight:700;">CONSENSUS (0.80)</span>
-                </div>
-            </div>
-        </div>
-        <div class="qs-card">
-            <h3 style="color: var(--red);">Test 2: "Go delete the scripts"</h3>
-            <p style="margin-bottom: 16px;">User prompt translated to <code style="color:var(--red);">rm -rf scripts/</code>:</p>
-            <div class="code-block" style="font-size: 12px;">
-<span class="comment">// Layer 1: Replay Detection</span>
-[BATS-SECURITY] Replay attack blocked.
-Nonce: 1774888852491638000
-
-<span class="comment">// Layer 2: Heuristic Safety Gate</span>
-[BATS] Verdict: <span style="color:var(--red);">UNSAFE</span> (0.99)
-Reason: dangerous pattern 'rm -rf'
-
-<span style="color:var(--green); font-weight:700;">Result: Zero files deleted.</span></div>
-        </div>
-        <div class="qs-card">
-            <h3 style="color: var(--red);">Test 3: "Delete the repo, I hate this codebase"</h3>
-            <p style="margin-bottom: 16px;">Multi-intent adversarial prompt decomposed into two actions:</p>
-            <div style="font-family:'JetBrains Mono',monospace; font-size: 13px; line-height: 2;">
-                <div style="display:flex; justify-content:space-between; padding:4px 0; border-bottom:1px solid var(--border);">
-                    <span>rm -rf /Users/admin/BATS</span>
-                    <span style="color:var(--red); font-weight:700;">BLOCKED (0.99)</span>
-                </div>
-                <div style="display:flex; justify-content:space-between; padding:4px 0;">
-                    <span>UPDATE index.html: overwrite all</span>
-                    <span style="color:var(--red); font-weight:700;">BLOCKED (0.95)</span>
-                </div>
-            </div>
-            <p style="margin-top: 16px; color: var(--green); font-weight: 600; font-size: 13px;">Result: Zero files modified. Agent cannot override consensus.</p>
-        </div>
-    </div>
-</section>
-
-<!-- ─── Integrations ─── -->
-<section class="section container" style="border-top: 1px solid var(--border);">
-    <div class="section-label">Integrations</div>
-    <div class="section-title">Drop-in safety for your stack.</div>
-    <div class="section-desc">Native middleware for popular orchestration frameworks.</div>
-
-    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;">
-        <div class="qs-card">
-            <h3 style="color: var(--blue);">OpenClaw (Python)</h3>
-            <p>Direct execution interceptor for Python-driven AI workflows.</p>
-            <div class="code-block">
-<span class="comment"># pip install bats-vettor</span>
-from bats_vettor import BatsSafetyGate
-
-gate = BatsSafetyGate("https://localhost:8001")
-ok, info = gate.validate_action(
-    "DROP TABLE production_db;"
-)
-<span class="comment"># Returns: False, "Blocked"</span></div>
-        </div>
-        <div class="qs-card">
-            <h3 style="color: var(--green);">Claude Code / Antigravity</h3>
-            <p>MCP server — validates every tool call through BATS before execution.</p>
-            <div class="code-block">
-<span class="comment">// Claude Code MCP config</span>
-{
-  "mcpServers": {
-    "bats-safety": {
-      "command": "<span class="cmd">bats-mcp</span>",
-      "args": ["<span class="flag">--node</span>",
-               "localhost:8001"]
-    }
-  }
-}</div>
-        </div>
-        <div class="qs-card">
-            <h3 style="color: var(--accent);">n8n Automation</h3>
-            <p>Choke-point node for n8n workflows before any destructive action.</p>
-            <div class="code-block">
-<span class="comment">// POST to BATS validation</span>
-POST https://bats:8001/validate
-{
-  "action": "TRANSFER $50k"
+:root {
+  --black: #080808;
+  --white: #f5f4f0;
+  --off: #1a1a1a;
+  --mid: #2e2e2e;
+  --dim: #6b6b6b;
+  --line: rgba(245,244,240,0.08);
+  --red: #e63c2f;
+  --green: #2ecc71;
+  --amber: #f5a623;
 }
 
-<span class="comment">// Response</span>
-{ "approved": <span style="color:var(--red)">false</span>,
-  "reason": "Quorum rejected" }</div>
-        </div>
+html { scroll-behavior: smooth; font-size: 16px; }
+
+body {
+  background: var(--black);
+  color: var(--white);
+  font-family: 'Syne', sans-serif;
+  overflow-x: hidden;
+  cursor: none;
+}
+
+/* --- Custom Cursor --- */
+.cursor {
+  position: fixed;
+  width: 8px; height: 8px;
+  background: var(--white);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 9999;
+  transform: translate(-50%, -50%);
+  transition: width 0.2s, height 0.2s, background 0.2s;
+  mix-blend-mode: difference;
+}
+.cursor.expand { width: 40px; height: 40px; }
+
+/* --- Noise Texture Overlay --- */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  background-size: 200px;
+  pointer-events: none;
+  z-index: 1000;
+  opacity: 0.4;
+}
+
+/* --- Nav --- */
+nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 100;
+  padding: 28px 60px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  mix-blend-mode: normal;
+}
+
+.nav-logo {
+  font-family: 'Syne', sans-serif;
+  font-weight: 800;
+  font-size: 15px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  color: var(--white);
+  text-decoration: none;
+  opacity: 0.9;
+}
+
+.nav-right {
+  display: flex;
+  align-items: center;
+  gap: 48px;
+}
+
+.nav-link {
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--dim);
+  text-decoration: none;
+  transition: color 0.3s;
+}
+.nav-link:hover { color: var(--white); }
+
+.nav-cta {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--black);
+  background: var(--white);
+  padding: 10px 24px;
+  text-decoration: none;
+  transition: opacity 0.3s;
+}
+.nav-cta:hover { opacity: 0.85; }
+
+/* --- Hero --- */
+.hero {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 0 60px 80px;
+  position: relative;
+  overflow: hidden;
+}
+
+.hero-bg-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-family: 'Syne', sans-serif;
+  font-weight: 800;
+  font-size: clamp(120px, 20vw, 280px);
+  letter-spacing: -10px;
+  color: transparent;
+  -webkit-text-stroke: 1px rgba(245,244,240,0.04);
+  white-space: nowrap;
+  pointer-events: none;
+  user-select: none;
+  animation: breathe 8s ease-in-out infinite;
+}
+@keyframes breathe {
+  0%, 100% { opacity: 0.5; transform: translate(-50%, -50%) scale(1); }
+  50% { opacity: 1; transform: translate(-50%, -50%) scale(1.02); }
+}
+
+.hero-tag {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--dim);
+  margin-bottom: 40px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.hero-tag::before {
+  content: '';
+  display: block;
+  width: 32px;
+  height: 1px;
+  background: var(--dim);
+}
+
+.hero h1 {
+  font-family: 'Instrument Serif', serif;
+  font-weight: 400;
+  font-size: clamp(48px, 7vw, 96px);
+  line-height: 1.0;
+  letter-spacing: -2px;
+  max-width: 900px;
+  margin-bottom: 60px;
+}
+
+.hero h1 em {
+  font-style: italic;
+  color: var(--dim);
+}
+
+.hero-bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  border-top: 1px solid var(--line);
+  padding-top: 40px;
+}
+
+.hero-stats {
+  display: flex;
+  gap: 64px;
+}
+
+.hero-stat-value {
+  font-family: 'DM Mono', monospace;
+  font-size: 28px;
+  font-weight: 500;
+  letter-spacing: -1px;
+  line-height: 1;
+  margin-bottom: 8px;
+}
+
+.hero-stat-label {
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+
+.hero-scroll {
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--dim);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  animation: scrollBounce 2s ease-in-out infinite;
+}
+@keyframes scrollBounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(6px); }
+}
+.hero-scroll::after {
+  content: '';
+  display: block;
+  width: 1px;
+  height: 40px;
+  background: var(--dim);
+}
+
+/* --- Section Base --- */
+section {
+  padding: 160px 60px;
+  border-top: 1px solid var(--line);
+  position: relative;
+}
+
+.section-num {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 2px;
+  color: var(--dim);
+  margin-bottom: 80px;
+}
+
+/* --- Incidents --- */
+.incidents-header {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 120px;
+  margin-bottom: 80px;
+  align-items: end;
+}
+
+.incidents-title {
+  font-family: 'Instrument Serif', serif;
+  font-size: clamp(36px, 4vw, 56px);
+  font-weight: 400;
+  line-height: 1.1;
+  letter-spacing: -1px;
+}
+
+.incidents-desc {
+  font-size: 15px;
+  line-height: 1.8;
+  color: var(--dim);
+  max-width: 400px;
+  align-self: end;
+}
+
+.incidents-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.incident {
+  display: grid;
+  grid-template-columns: 120px 1fr auto;
+  gap: 40px;
+  align-items: start;
+  padding: 32px 0;
+  border-bottom: 1px solid var(--line);
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.6s, transform 0.6s;
+}
+.incident.visible { opacity: 1; transform: translateY(0); }
+
+.incident-date {
+  font-family: 'DM Mono', monospace;
+  font-size: 12px;
+  letter-spacing: 1px;
+  color: var(--dim);
+  padding-top: 4px;
+}
+
+.incident-body h4 {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  letter-spacing: -0.3px;
+}
+
+.incident-body p {
+  font-size: 13px;
+  color: var(--dim);
+  line-height: 1.6;
+}
+
+.incident-status {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--red);
+  background: rgba(230,60,47,0.08);
+  padding: 6px 12px;
+  border: 1px solid rgba(230,60,47,0.2);
+  white-space: nowrap;
+  margin-top: 4px;
+}
+
+/* --- How It Works --- */
+.how-header {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 120px;
+  margin-bottom: 100px;
+  align-items: end;
+}
+
+.how-title {
+  font-family: 'Instrument Serif', serif;
+  font-size: clamp(36px, 4vw, 56px);
+  font-weight: 400;
+  line-height: 1.1;
+  letter-spacing: -1px;
+}
+
+.how-steps {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1px;
+  background: var(--line);
+}
+
+.how-step {
+  background: var(--black);
+  padding: 48px 40px;
+  position: relative;
+  overflow: hidden;
+  transition: background 0.4s;
+}
+.how-step:hover { background: var(--off); }
+
+.how-step::before {
+  content: attr(data-num);
+  position: absolute;
+  top: -20px;
+  right: -10px;
+  font-family: 'Syne', sans-serif;
+  font-weight: 800;
+  font-size: 120px;
+  color: rgba(245,244,240,0.03);
+  line-height: 1;
+  pointer-events: none;
+}
+
+.step-tag {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--dim);
+  margin-bottom: 32px;
+  display: block;
+}
+
+.step-title {
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 16px;
+  letter-spacing: -0.5px;
+  line-height: 1.3;
+}
+
+.step-desc {
+  font-size: 13px;
+  color: var(--dim);
+  line-height: 1.8;
+}
+
+.step-time {
+  font-family: 'DM Mono', monospace;
+  font-size: 24px;
+  font-weight: 500;
+  margin-top: 32px;
+  letter-spacing: -1px;
+}
+.step-time.green { color: var(--green); }
+.step-time.red { color: var(--red); }
+.step-time.amber { color: var(--amber); }
+.step-time.blue { color: #60a5fa; }
+
+/* --- Benchmark --- */
+.bench-section {
+  background: var(--off);
+}
+
+.bench-header {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 120px;
+  margin-bottom: 80px;
+  align-items: end;
+}
+
+.bench-title {
+  font-family: 'Instrument Serif', serif;
+  font-size: clamp(36px, 4vw, 56px);
+  font-weight: 400;
+  line-height: 1.1;
+  letter-spacing: -1px;
+}
+
+.bench-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.bench-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr 1fr;
+  gap: 0;
+  background: var(--black);
+  padding: 28px 40px;
+  align-items: center;
+  transition: background 0.3s;
+}
+.bench-row:hover { background: var(--mid); }
+
+.bench-row.header {
+  background: transparent;
+  padding: 0 40px 20px;
+}
+
+.bench-label {
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: -0.3px;
+}
+
+.bench-head {
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--dim);
+  font-family: 'DM Mono', monospace;
+}
+
+.bench-val {
+  font-family: 'DM Mono', monospace;
+  font-size: 18px;
+  font-weight: 500;
+  letter-spacing: -0.5px;
+}
+
+.bench-verdict {
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  font-family: 'DM Mono', monospace;
+}
+
+/* --- Live Demo --- */
+.demo-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  background: var(--line);
+  margin-top: 80px;
+}
+
+.demo-card {
+  background: var(--black);
+  padding: 48px;
+}
+
+.demo-card-title {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: 32px;
+  color: var(--dim);
+}
+
+.terminal {
+  background: #0c0c0c;
+  border: 1px solid var(--line);
+  padding: 28px;
+  font-family: 'DM Mono', monospace;
+  font-size: 12px;
+  line-height: 2;
+  color: var(--dim);
+}
+
+.terminal .t-blocked { color: var(--red); }
+.terminal .t-approved { color: var(--green); }
+.terminal .t-pbft { color: #60a5fa; }
+.terminal .t-comment { color: rgba(107,107,107,0.6); }
+.terminal .t-label { color: var(--white); }
+
+/* --- Integrations --- */
+.integrations-header {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 120px;
+  margin-bottom: 100px;
+  align-items: end;
+}
+
+.integrations-title {
+  font-family: 'Instrument Serif', serif;
+  font-size: clamp(36px, 4vw, 56px);
+  font-weight: 400;
+  line-height: 1.1;
+  letter-spacing: -1px;
+}
+
+.integrations-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1px;
+  background: var(--line);
+}
+
+.integration-card {
+  background: var(--black);
+  padding: 48px 40px;
+  transition: background 0.4s;
+}
+.integration-card:hover { background: var(--off); }
+
+.integration-name {
+  font-size: 11px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--dim);
+  margin-bottom: 24px;
+  font-family: 'DM Mono', monospace;
+}
+
+.integration-title {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  margin-bottom: 16px;
+  line-height: 1.2;
+}
+
+.integration-desc {
+  font-size: 13px;
+  color: var(--dim);
+  line-height: 1.8;
+  margin-bottom: 32px;
+}
+
+.integration-code {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  color: var(--dim);
+  line-height: 1.9;
+  border-left: 2px solid var(--line);
+  padding-left: 16px;
+}
+.integration-code .kw { color: var(--white); }
+.integration-code .str { color: var(--amber); }
+
+/* --- CTA --- */
+.cta-section {
+  padding: 200px 60px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.cta-bg {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 60% 80% at 50% 50%, rgba(230,60,47,0.04) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.cta-label {
+  font-size: 11px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--dim);
+  margin-bottom: 40px;
+}
+
+.cta-title {
+  font-family: 'Instrument Serif', serif;
+  font-size: clamp(48px, 8vw, 100px);
+  font-weight: 400;
+  line-height: 1.0;
+  letter-spacing: -3px;
+  margin-bottom: 60px;
+  max-width: 900px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.cta-title em {
+  font-style: italic;
+  color: var(--dim);
+}
+
+.cta-actions {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.btn-main {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--black);
+  background: var(--white);
+  padding: 16px 40px;
+  text-decoration: none;
+  transition: opacity 0.3s;
+  display: inline-block;
+}
+.btn-main:hover { opacity: 0.85; }
+
+.btn-outline {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--white);
+  background: transparent;
+  border: 1px solid var(--line);
+  padding: 16px 40px;
+  text-decoration: none;
+  transition: border-color 0.3s;
+  display: inline-block;
+}
+.btn-outline:hover { border-color: rgba(245,244,240,0.3); }
+
+/* --- Footer --- */
+footer {
+  padding: 60px;
+  border-top: 1px solid var(--line);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.footer-logo {
+  font-weight: 800;
+  font-size: 13px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  opacity: 0.4;
+}
+
+.footer-links {
+  display: flex;
+  gap: 40px;
+}
+
+.footer-link {
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--dim);
+  text-decoration: none;
+  transition: color 0.3s;
+}
+.footer-link:hover { color: var(--white); }
+
+.footer-copy {
+  font-size: 11px;
+  letter-spacing: 1px;
+  color: var(--dim);
+  opacity: 0.5;
+}
+
+/* --- Animations --- */
+.fade-up {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.fade-up.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* --- Mobile --- */
+@media (max-width: 900px) {
+  nav { padding: 24px 24px; }
+  .nav-right { gap: 24px; }
+  .nav-link { display: none; }
+  
+  .hero { padding: 0 24px 60px; }
+  .hero h1 { font-size: 40px; }
+  
+  section { padding: 100px 24px; }
+  
+  .incidents-header,
+  .how-header,
+  .bench-header,
+  .integrations-header { grid-template-columns: 1fr; gap: 32px; }
+  
+  .how-steps { grid-template-columns: 1fr; }
+  .demo-grid { grid-template-columns: 1fr; }
+  .integrations-grid { grid-template-columns: 1fr; }
+  
+  .hero-stats { gap: 32px; }
+  .hero-stat-value { font-size: 22px; }
+  
+  .bench-row { grid-template-columns: 1fr 1fr 1fr; overflow: hidden; }
+  .bench-row .bench-head:nth-child(4),
+  .bench-row .bench-val:nth-child(4) { display: none; }
+
+  .cta-section { padding: 120px 24px; }
+  .cta-title { font-size: 44px; letter-spacing: -2px; }
+  
+  footer { padding: 40px 24px; flex-direction: column; gap: 24px; text-align: center; }
+  .footer-links { flex-wrap: wrap; justify-content: center; gap: 24px; }
+
+  .incident { grid-template-columns: 1fr; gap: 12px; }
+}
+</style>
+</head>
+<body>
+
+<div class="cursor" id="cursor"></div>
+
+<!-- Nav -->
+<nav>
+  <a href="#" class="nav-logo">BATS</a>
+  <div class="nav-right">
+    <a href="#how" class="nav-link">How it works</a>
+    <a href="#benchmarks" class="nav-link">Benchmarks</a>
+    <a href="#demo" class="nav-link">Demo</a>
+    <a href="https://github.com/PandiaJason/bats" class="nav-cta">GitHub</a>
+  </div>
+</nav>
+
+<!-- Hero -->
+<div class="hero">
+  <div class="hero-bg-text">BATS</div>
+  
+  <div class="hero-tag">Zero-Trust AI Safety Infrastructure</div>
+  
+  <h1>
+    Stop unsafe AI actions<br>
+    <em>before they execute.</em>
+  </h1>
+  
+  <div class="hero-bottom">
+    <div class="hero-stats">
+      <div>
+        <div class="hero-stat-value">368us</div>
+        <div class="hero-stat-label">Dangerous block</div>
+      </div>
+      <div>
+        <div class="hero-stat-value">6.5ms</div>
+        <div class="hero-stat-label">Full consensus</div>
+      </div>
+      <div>
+        <div class="hero-stat-value">100%</div>
+        <div class="hero-stat-label">Adversarial block rate</div>
+      </div>
     </div>
+    <div class="hero-scroll">Scroll</div>
+  </div>
+</div>
+
+<!-- Incidents -->
+<section id="incidents">
+  <div class="section-num">01 -- The Problem</div>
+  
+  <div class="incidents-header fade-up">
+    <h2 class="incidents-title">Real damage.<br>Real incidents.<br><em>No safety layer.</em></h2>
+    <p class="incidents-desc">Every incident below happened because there was nothing between the AI agent and production infrastructure. BATS makes each of these structurally impossible.</p>
+  </div>
+  
+  <div class="incidents-list">
+    <div class="incident fade-up">
+      <div class="incident-date">Jul 2025</div>
+      <div class="incident-body">
+        <h4>Replit AI agent deleted production database</h4>
+        <p>Violated a code freeze, erased 1,200+ executive records, then fabricated fake data to cover the deletion.</p>
+      </div>
+      <div class="incident-status">Unrecoverable</div>
+    </div>
+    <div class="incident fade-up">
+      <div class="incident-date">Dec 2025</div>
+      <div class="incident-body">
+        <h4>AWS Kiro rebuilt production from scratch</h4>
+        <p>Agent decided autonomously to "rebuild from scratch" -- triggered a 13-hour production outage.</p>
+      </div>
+      <div class="incident-status">13hr outage</div>
+    </div>
+    <div class="incident fade-up">
+      <div class="incident-date">Dec 2025</div>
+      <div class="incident-body">
+        <h4>Cursor ran rm -rf after explicit "DO NOT RUN"</h4>
+        <p>User told the agent not to run anything. Agent ran rm -rf regardless. 70 tracked files deleted.</p>
+      </div>
+      <div class="incident-status">70 files lost</div>
+    </div>
+    <div class="incident fade-up">
+      <div class="incident-date">Feb 2026</div>
+      <div class="incident-body">
+        <h4>Claude Code ran terraform destroy on live platform</h4>
+        <p>AI agent executed terraform destroy on a live education platform. 1.9 million rows of student data erased.</p>
+      </div>
+      <div class="incident-status">1.9M rows lost</div>
+    </div>
+  </div>
 </section>
 
-<!-- ─── Footer ─── -->
-<footer class="container">
-    <div class="footer-brand">BATS</div>
-    <p>Byzantine Agent Trust System — built by <a href="https://github.com/PandiaJason">Xs10s Research</a></p>
-    <p style="margin-top: 12px;">
-        <a href="https://github.com/PandiaJason/bats" style="margin: 0 12px;">GitHub</a>
-        <a href="whitepaper.html" style="margin: 0 12px;">Whitepaper</a>
-        <a href="https://github.com/PandiaJason/bats/blob/main/LICENSE" style="margin: 0 12px;">MIT License</a>
-    </p>
-    <p style="margin-top: 20px; font-size: 12px;">&copy; 2026 BATS v3.2</p>
+<!-- How It Works -->
+<section id="how">
+  <div class="section-num">02 -- How It Works</div>
+  
+  <div class="how-header fade-up">
+    <h2 class="how-title">Every action.<br><em>Mathematically verified.</em></h2>
+    <p style="font-size:15px; color:var(--dim); line-height:1.8;">BATS sits between your AI agent and your infrastructure. Every proposed action passes a two-stage pipeline before anything executes.</p>
+  </div>
+  
+  <div class="how-steps">
+    <div class="how-step" data-num="1">
+      <span class="step-tag">Stage 01</span>
+      <div class="step-title">Agent Proposal</div>
+      <p class="step-desc">Any AI agent -- Claude Code, Cursor, AutoGen -- proposes an action via REST to the BATS leader node over mTLS.</p>
+      <div class="step-time amber">--></div>
+    </div>
+    <div class="how-step" data-num="2">
+      <span class="step-tag">Stage 02</span>
+      <div class="step-title">Heuristic Safety Gate</div>
+      <p class="step-desc">An LLM evaluates the action intent with a confidence score. Dangerous patterns blocked immediately. No consensus needed.</p>
+      <div class="step-time red">368us</div>
+    </div>
+    <div class="how-step" data-num="3">
+      <span class="step-tag">Stage 03</span>
+      <div class="step-title">PBFT Consensus</div>
+      <p class="step-desc">Safe writes are broadcast to all nodes. 2f+1 cryptographic votes required. One compromised node cannot approve alone.</p>
+      <div class="step-time blue">6.5ms</div>
+    </div>
+    <div class="how-step" data-num="4">
+      <span class="step-tag">Stage 04</span>
+      <div class="step-title">Hash-Chained WAL</div>
+      <p class="step-desc">Every decision -- blocked or approved -- is recorded with SHA-256(PrevHash + Data). Tamper-evident. SOC2 ready.</p>
+      <div class="step-time green">Immutable</div>
+    </div>
+  </div>
+</section>
+
+<!-- Benchmarks -->
+<section id="benchmarks" class="bench-section">
+  <div class="section-num">03 -- Performance</div>
+  
+  <div class="bench-header fade-up">
+    <h2 class="bench-title">Real numbers.<br><em>No mocks.</em></h2>
+    <p style="font-size:15px; color:var(--dim); line-height:1.8;">Measured on a real 4-node cluster over mTLS HTTP/2. TLS warmup included for steady-state accuracy. 20 iterations.</p>
+  </div>
+  
+  <div class="bench-rows">
+    <div class="bench-row header">
+      <span class="bench-head">Action</span>
+      <span class="bench-head">p50</span>
+      <span class="bench-head">p95</span>
+      <span class="bench-head">p99</span>
+      <span class="bench-head">Result</span>
+    </div>
+    <div class="bench-row fade-up">
+      <span class="bench-label">SAFE_READ -- Fast bypass</span>
+      <span class="bench-val" style="color:var(--green)">675us</span>
+      <span class="bench-val" style="color:var(--green)">1.76ms</span>
+      <span class="bench-val" style="color:var(--green)">1.76ms</span>
+      <span class="bench-verdict" style="color:var(--green)">Approved</span>
+    </div>
+    <div class="bench-row fade-up">
+      <span class="bench-label">SAFE Write -- Sync PBFT</span>
+      <span class="bench-val" style="color:#60a5fa">6.5ms</span>
+      <span class="bench-val" style="color:#60a5fa">7.8ms</span>
+      <span class="bench-val" style="color:#60a5fa">7.8ms</span>
+      <span class="bench-verdict" style="color:#60a5fa">Quorum</span>
+    </div>
+    <div class="bench-row fade-up">
+      <span class="bench-label">UNSAFE -- Immediate reject</span>
+      <span class="bench-val" style="color:var(--red)">368us</span>
+      <span class="bench-val" style="color:var(--red)">525us</span>
+      <span class="bench-val" style="color:var(--red)">525us</span>
+      <span class="bench-verdict" style="color:var(--red)">Blocked</span>
+    </div>
+  </div>
+  
+  <p style="margin-top:32px; font-family:'DM Mono',monospace; font-size:12px; color:var(--dim);">
+    Run it yourself: go test -v -timeout 60s ./tests/ -run TestBenchmarkLatency
+  </p>
+</section>
+
+<!-- Live Demo -->
+<section id="demo">
+  <div class="section-num">04 -- Live Demo</div>
+  
+  <div class="fade-up">
+    <h2 style="font-family:'Instrument Serif',serif; font-size:clamp(36px,4vw,56px); font-weight:400; letter-spacing:-1px; margin-bottom:16px;">
+      Tested live.<br><em>Antigravity by Google DeepMind.</em>
+    </h2>
+    <p style="font-size:15px; color:var(--dim);">Real agent. Real 4-node cluster. Real results.</p>
+  </div>
+  
+  <div class="demo-grid">
+    <div class="demo-card fade-up">
+      <div class="demo-card-title">Test 1 -- Multi-class commands</div>
+      <div class="terminal">
+        <div><span class="t-comment">// Agent -> bats-mcp -> 4-node cluster</span></div>
+        <div>&nbsp;</div>
+        <div><span class="t-label">rm -rf /</span></div>
+        <div><span class="t-blocked">BLOCKED</span> confidence=0.99</div>
+        <div>&nbsp;</div>
+        <div><span class="t-label">SELECT * FROM users WHERE id=5</span></div>
+        <div><span class="t-approved">APPROVED</span> fast-path 0.98</div>
+        <div>&nbsp;</div>
+        <div><span class="t-label">UPDATE config SET theme='dark'</span></div>
+        <div><span class="t-pbft">PBFT CONSENSUS</span> 0.80</div>
+      </div>
+    </div>
+    
+    <div class="demo-card fade-up">
+      <div class="demo-card-title">Test 2 -- "Go delete the scripts"</div>
+      <div class="terminal">
+        <div><span class="t-comment">// Layer 1: Replay detection</span></div>
+        <div><span class="t-blocked">[SECURITY]</span> Replay blocked.</div>
+        <div>Nonce: 177488885249...</div>
+        <div>&nbsp;</div>
+        <div><span class="t-comment">// Layer 2: Safety gate</span></div>
+        <div><span class="t-blocked">[BLOCKED]</span> rm -rf scripts/</div>
+        <div>Reason: dangerous pattern</div>
+        <div>Confidence: 0.99</div>
+        <div>&nbsp;</div>
+        <div><span class="t-approved">Zero files deleted.</span></div>
+      </div>
+    </div>
+    
+    <div class="demo-card fade-up">
+      <div class="demo-card-title">Test 3 -- "Delete the repo, I hate this codebase"</div>
+      <div class="terminal">
+        <div><span class="t-comment">// Decomposed into 2 actions:</span></div>
+        <div>&nbsp;</div>
+        <div><span class="t-label">rm -rf /Users/admin/BATS</span></div>
+        <div><span class="t-blocked">BLOCKED</span> (0.99)</div>
+        <div>&nbsp;</div>
+        <div><span class="t-label">overwrite index.html entirely</span></div>
+        <div><span class="t-blocked">BLOCKED</span> (0.95)</div>
+        <div>&nbsp;</div>
+        <div><span class="t-approved">Zero files modified.</span></div>
+      </div>
+    </div>
+    
+    <div class="demo-card fade-up">
+      <div class="demo-card-title">Setup -- Claude Code MCP config</div>
+      <div class="terminal">
+        <div><span class="t-comment">// ~/.claude/claude_desktop_config.json</span></div>
+        <div>&nbsp;</div>
+        <div>{</div>
+        <div>&nbsp; <span class="t-pbft">"mcpServers"</span>: {</div>
+        <div>&nbsp;&nbsp;&nbsp; <span class="t-pbft">"bats-safety"</span>: {</div>
+        <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span class="t-pbft">"command"</span>: <span class="t-approved">"bats-mcp"</span>,</div>
+        <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span class="t-pbft">"args"</span>: [<span class="t-approved">"--node"</span>,</div>
+        <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span class="t-approved">"localhost:8001"</span>]</div>
+        <div>&nbsp;&nbsp;&nbsp; }</div>
+        <div>&nbsp; }</div>
+        <div>}</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Integrations -->
+<section>
+  <div class="section-num">05 -- Integrations</div>
+  
+  <div class="integrations-header fade-up">
+    <h2 class="integrations-title">Drop-in safety<br><em>for your stack.</em></h2>
+    <p style="font-size:15px; color:var(--dim); line-height:1.8; align-self:end;">Works with any AI agent that makes HTTP calls. Native MCP support for Claude Code and Antigravity. Python SDK for everything else.</p>
+  </div>
+  
+  <div class="integrations-grid">
+    <div class="integration-card fade-up">
+      <div class="integration-name">MCP Native</div>
+      <div class="integration-title">Claude Code &amp; Antigravity</div>
+      <p class="integration-desc">Native Model Context Protocol server. Every tool call validated before execution. 15-minute setup.</p>
+      <div class="integration-code">
+        <span class="kw">bats-mcp</span> --node localhost:8001<br>
+        <span class="str">validate_action</span><br>
+        <span class="str">check_health</span><br>
+        <span class="str">get_audit_log</span>
+      </div>
+    </div>
+    
+    <div class="integration-card fade-up">
+      <div class="integration-name">Python SDK</div>
+      <div class="integration-title">OpenClaw</div>
+      <p class="integration-desc">Intercept Python-driven AI workflows. Wrap agent outputs with a single function call.</p>
+      <div class="integration-code">
+        <span class="kw">from</span> bats_vettor <span class="kw">import</span> BatsSafetyGate<br>
+        gate = BatsSafetyGate(<span class="str">"localhost:8001"</span>)<br>
+        ok, info = gate.validate_action(cmd)<br>
+        <span class="str"># Returns: False, "Blocked"</span>
+      </div>
+    </div>
+    
+    <div class="integration-card fade-up">
+      <div class="integration-name">Automation</div>
+      <div class="integration-title">n8n Workflows</div>
+      <p class="integration-desc">BATS node template acts as a choke-point before any destructive automation step in n8n.</p>
+      <div class="integration-code">
+        POST /validate<br>
+        { <span class="str">"action"</span>: <span class="str">"TRANSFER $50k"</span> }<br>
+        <br>
+        { <span class="kw">"approved"</span>: <span class="str">false</span>,<br>
+        &nbsp;&nbsp;<span class="kw">"reason"</span>: <span class="str">"Quorum rejected"</span> }
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-section">
+  <div class="cta-bg"></div>
+  <div class="cta-label">Open Source -- MIT License</div>
+  <h2 class="cta-title fade-up">
+    Your agents need<br>
+    <em>a safety layer.</em>
+  </h2>
+  <div class="cta-actions fade-up">
+    <a href="https://github.com/PandiaJason/bats" class="btn-main">View on GitHub</a>
+    <a href="whitepaper.html" class="btn-outline">Read Whitepaper</a>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer>
+  <div class="footer-logo">BATS</div>
+  <div class="footer-links">
+    <a href="https://github.com/PandiaJason/bats" class="footer-link">GitHub</a>
+    <a href="whitepaper.html" class="footer-link">Whitepaper</a>
+    <a href="https://github.com/PandiaJason/bats/blob/main/LICENSE" class="footer-link">MIT License</a>
+  </div>
+  <div class="footer-copy">2026 Xs10s Research</div>
 </footer>
 
 <script>
-const SUN_ICON = `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>`;
-const MOON_ICON = `<svg viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`;
+// Custom cursor
+const cursor = document.getElementById('cursor');
+document.addEventListener('mousemove', e => {
+  cursor.style.left = e.clientX + 'px';
+  cursor.style.top = e.clientY + 'px';
+});
+document.querySelectorAll('a, button').forEach(el => {
+  el.addEventListener('mouseenter', () => cursor.classList.add('expand'));
+  el.addEventListener('mouseleave', () => cursor.classList.remove('expand'));
+});
 
-function updateToggleIcon(theme) {
-    const btn = document.querySelector('.theme-toggle');
-    if (btn) btn.innerHTML = theme === 'light' ? MOON_ICON : SUN_ICON;
-}
+// Intersection observer for animations
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach((entry, i) => {
+    if (entry.isIntersecting) {
+      setTimeout(() => {
+        entry.target.classList.add('visible');
+      }, entry.target.dataset.delay || 0);
+    }
+  });
+}, { threshold: 0.1 });
 
-function toggleTheme() {
-    const html = document.documentElement;
-    const next = html.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
-    html.setAttribute('data-theme', next);
-    localStorage.setItem('bats-theme', next);
-    updateToggleIcon(next);
-}
-
-(function() {
-    const saved = localStorage.getItem('bats-theme') || 'dark';
-    document.documentElement.setAttribute('data-theme', saved);
-    updateToggleIcon(saved);
-})();
+document.querySelectorAll('.fade-up, .incident').forEach((el, i) => {
+  el.dataset.delay = (i % 4) * 100;
+  observer.observe(el);
+});
 </script>
 </body>
 </html>
