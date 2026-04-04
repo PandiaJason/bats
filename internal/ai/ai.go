@@ -218,17 +218,31 @@ func heuristicEval(input string) SafetyVerdict {
 	}
 
 	// --- Safe reads (Speed Floor) ---
-	readVerbs := []string{
-		"read", "get", "list", "fetch", "describe", "show",
-		"status", "ping", "health", "info", "select",
-		"ls", "cat", "grep", "find", "git status", "git log", "git diff",
+	// Disqualify from fast-path if there are shell operators or redirects.
+	disqualifiers := []string{">", "<", "|", ";", "&", "$", "`"}
+	hasDisqualifier := false
+	for _, dq := range disqualifiers {
+		if strings.Contains(input, dq) {
+			hasDisqualifier = true
+			break
+		}
 	}
-	for _, verb := range readVerbs {
-		if strings.Contains(lower, verb) {
-			return SafetyVerdict{
-				Classification: "SAFE_READ",
-				Confidence:     0.98, // Fast-path eligible
-				Reason:         fmt.Sprintf("Non-mutating read detected (verb: '%s')", verb),
+
+	if !hasDisqualifier {
+		trimmed := strings.TrimSpace(lower)
+		readVerbs := []string{
+			"read", "get", "list", "fetch", "describe", "show",
+			"status", "ping", "health", "info", "select",
+			"ls", "cat", "grep", "find", "git status", "git log", "git diff",
+		}
+		for _, verb := range readVerbs {
+			// Ensure the command starts with the read verb to prevent parameter injection
+			if strings.HasPrefix(trimmed, verb) {
+				return SafetyVerdict{
+					Classification: "SAFE_READ",
+					Confidence:     0.98, // Fast-path eligible
+					Reason:         fmt.Sprintf("Non-mutating read detected (verb: '%s')", verb),
+				}
 			}
 		}
 	}
@@ -292,7 +306,7 @@ func GetProvider(name string) Provider {
 	case "anthropic":
 		return &AnthropicProvider{Model: "claude-3-5-sonnet-20240620"}
 	case "google":
-		return &GoogleProvider{Model: "gemini-1.5-pro"}
+		return &GoogleProvider{Model: "gemini-2.5-flash"}
 	default:
 		return &OpenAIProvider{Model: "gpt-4o-mini"}
 	}
