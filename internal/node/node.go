@@ -79,13 +79,29 @@ func NewNode(id string, port string, peers []string) *Node {
 		f = 1
 	}
 
+	providerStr := os.Getenv("NODE_LLM")
+	if providerStr == "" {
+		switch id {
+		case "node1":
+			providerStr = "anthropic"
+		case "node2":
+			providerStr = "openai"
+		case "node3":
+			providerStr = "google"
+		case "node4":
+			providerStr = "local"
+		default:
+			providerStr = "local"
+		}
+	}
+
 	n := &Node{
 		ID:      id,
 		Port:    port,
 		Peers:   peers,
 		Network: netClient,
 		WAL:     log,
-		AI:      ai.GetProvider(os.Getenv(strings.ToUpper(id) + "_AI_PROVIDER")),
+		AI:      ai.GetProvider(providerStr),
 		pending: make(map[[64]byte]chan bool),
 	}
 

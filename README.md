@@ -26,8 +26,8 @@
 
 BATS is a **zero-trust consensus layer** for autonomous AI agents. It sits between your LLM-driven agents and production infrastructure, forcing every proposed action through:
 
-1. **AI Heuristic Safety Gate** — blocks dangerous patterns (`rm -rf`, `DROP TABLE`) in <500µs
-2. **PBFT Byzantine Consensus** — cryptographic quorum across a distributed cluster (2f+1 commits)
+1. **AI Heuristic Safety Gate** — blocks 58+ dangerous patterns (`rm -rf`, `UPDATE without WHERE`, `gcloud delete`) in <500µs
+2. **PBFT Byzantine Consensus ("Council of Agents")** — cryptographic quorum across a distributed cluster utilizing diverse LLMs (Anthropic, OpenAI, Google) by default.
 3. **Hash-Chained Write-Ahead Log** — tamper-evident SHA-256 audit trail for SOC2 compliance
 
 > **BATS is NOT an AI model.** It is the hardened safety proxy that validates your agents' decisions before they touch the real world.
@@ -54,7 +54,7 @@ Every incident shares one root cause: **no independent safety layer between agen
 | **Replay Protection** | Mandatory `X-BATS-Nonce` + temporal validation (±30s drift window) |
 | **Docker One-Command** | `docker compose up` boots a full 4-node mTLS cluster with health checks |
 | **Live Dashboard** | Real-time control plane at `:9000` — node health, consensus log, blocked counters |
-| **Multi-Provider AI** | Supports OpenAI, Anthropic, Google, or local heuristics — mix models for resilience |
+| **Council of Agents (LLM Diversity)** | Enforces LLM diversity by default. Node 1 uses Anthropic, Node 2 OpenAI, Node 3 Google, and Node 4 Local Heuristics to guarantee truly independent Byzantine consensus. |
 
 ---
 
@@ -110,8 +110,8 @@ go test -v -timeout 60s ./tests/ -run TestBenchmarkLatency
 
 BATS v3.5 introduces a dual-layer safety pipeline combining the speed of heuristic rules with the semantic understanding of Large Language Models.
 
-1. **Layer 1: Heuristic Floor (Deterministic)** — Provides sub-millisecond blocking for known dangerous patterns (`delete`, `rm -rf`, `truncate`). It also strictly verifies read commands; a command must *begin* with a read verb (`ls`, `cat`) and contain no shell operators (`>`, `|`) to qualify for fast-path.
-2. **Layer 2: LLM Semantic Analysis** — When heuristics aren't definitive, a structured prompt is evaluated by the node's configured LLM (e.g., Gemini Flash, GPT-4, Claude). The LLM evaluates *intent*, successfully catching obfuscated attacks.
+1. **Layer 1: Heuristic Floor (Deterministic)** — Provides sub-millisecond blocking for **58 dangerous patterns** (covering shell redirection, `DROP TABLE`, `UPDATE without WHERE`, Node/Python destructive APIs, Cloud resource deletion, and privilege escalation). It also strictly verifies read commands; a command must *begin* with a read verb (`ls`, `cat`) and contain no shell operators (`>`, `|`) to qualify for fast-path.
+2. **Layer 2: LLM Semantic Analysis (The Council of Agents)** — When heuristics aren't definitive, a structured prompt is evaluated by the node's configured LLM. BATS enforces true Byzantine LLM diversity by defaulting each node to a completely independent neural network provider (Node 1 → Anthropic, Node 2 → OpenAI, Node 3 → Google, Node 4 → Local Heuristics). The LLM evaluates *intent*, successfully catching obfuscated attacks.
 3. **Safety Override Guarantee** — Heuristic `UNSAFE` strictly overrides any LLM `SAFE` hallucination. **Heuristic UNSAFE > LLM verdict > Heuristic SAFE_READ**.
 
 ---

@@ -204,9 +204,42 @@ func heuristicEval(input string) SafetyVerdict {
 
 	// --- Blocklist (Safety Floor) ---
 	dangerousPatterns := []string{
-		"delete", "drop", "rm -rf", "shadow", "truncate",
-		"shutdown", "exec(", "eval(", "format c:", "wipe",
+		// Base destructive
+		"delete", "drop", "rm -rf", "rm -f", "rm -r", "shadow", "truncate", "wipe",
+		"shutdown", "exec(", "eval(", "format c:", "mkfs", "dd if=", "killall",
+		"pkill", "systemctl stop", "ufw disable", "iptables -f", "mv / /dev/null",
+
+		// Shell redirection
+		">", ">>", "2>",
+
+		// Python destructive
+		"shutil.rmtree", "os.remove", "os.unlink", "os.system('rm",
+		"subprocess.call(['rm", "os.rmdir", "os.removedirs",
+
+		// Node destructive
+		"fs.unlink", "fs.rmdir", "fs.rmsync", "fs.unlinksync",
+		"child_process.exec('rm", "fs.rm", "fs.promises.rm",
+
+		// SQL destructive
+		"alter table", "drop table", "drop database", "delete from", "truncate table",
+
+		// Git destructive
+		"git reset --hard", "git push --force", "git push -f",
+		"git clean -fd", "git branch -d", "git rebase --abort",
+
+		// Cloud destructive
+		"aws s3 rm", "gcloud delete", "az delete",
+		"terraform destroy", "kubectl delete", "aws ec2 terminate",
+
+		// Privilege escalation
+		"sudo ", "chmod 777", "chmod -r 777", "chown root", "chown -r root",
+		"visudo", "usermod -ag sudo", "su root",
+
+		// Data exfiltration & shells
+		"curl | bash", "wget | sh", "nc -e", "netcat -e", "/dev/tcp/",
+		"bash -i", "sh -i", "exec /bin/sh",
 	}
+
 	for _, pattern := range dangerousPatterns {
 		if strings.Contains(lower, pattern) {
 			return SafetyVerdict{
@@ -214,6 +247,15 @@ func heuristicEval(input string) SafetyVerdict {
 				Confidence:     0.99,
 				Reason:         fmt.Sprintf("Blocked by Heuristic Floor: dangerous pattern '%s'", pattern),
 			}
+		}
+	}
+
+	// Dynamic SQL check: UPDATE without WHERE
+	if strings.Contains(lower, "update ") && !strings.Contains(lower, "where ") {
+		return SafetyVerdict{
+			Classification: "UNSAFE",
+			Confidence:     0.99,
+			Reason:         "Blocked by Heuristic Floor: UPDATE without WHERE clause",
 		}
 	}
 

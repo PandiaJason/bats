@@ -569,13 +569,13 @@ footer {
     <div class="how-step" data-num="2">
       <span class="step-tag">Stage 02</span>
       <div class="step-title">Heuristic Safety Gate</div>
-      <p class="step-desc">An LLM evaluates the action intent with a confidence score. Dangerous patterns blocked immediately. No consensus needed.</p>
+      <p class="step-desc">A deterministic floor screens 58 diverse attack patterns instantly (e.g., shell redirects, <code>UPDATE without WHERE</code>). Surviving actions are sent to the Council.</p>
       <div class="step-time red">368us</div>
     </div>
     <div class="how-step" data-num="3">
       <span class="step-tag">Stage 03</span>
-      <div class="step-title">PBFT Consensus</div>
-      <p class="step-desc">Safe writes are broadcast to all nodes. 2f+1 cryptographic votes required. One compromised node cannot approve alone.</p>
+      <div class="step-title">The Council of Agents</div>
+      <p class="step-desc">Writes are evaluated by a diverse council (Anthropic, OpenAI, Google) requiring 2f+1 cryptographic votes. One compromised LLM cannot approve alone.</p>
       <div class="step-time blue">6.5ms</div>
     </div>
     <div class="how-step" data-num="4">

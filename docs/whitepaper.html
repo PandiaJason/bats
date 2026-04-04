@@ -253,7 +253,7 @@ footer a:hover { color: var(--text); }
     <h3>2.1 The Two-Gate Validation Pipeline</h3>
     <p>Before any state-mutating action proposed by an agent is authorized, it must clear a two-stage evaluation:</p>
     <ul>
-      <li><strong>AI Heuristic Gate:</strong> The proposed intent string is intercepted by an independent LLM supervisor which performs a zero-shot semantic analysis. If the heuristic bounds denote an objective function as <span class="math">SAFE_READ</span>, BATS routes the action through an optimistic async fast-path.</li>
+      <li><strong>AI Heuristic Gate:</strong> The proposed intent string is first intercepted by a deterministic floor of 58 dangerous patterns (covering shell redirection, SQL mutations like <code>UPDATE without WHERE</code>, cloud deletions, and privilege escalation). If it passes, it is evaluated by an LLM supervisor. If the heuristic bounds denote an objective function as <span class="math">SAFE_READ</span>, BATS routes the action through an optimistic async fast-path.</li>
       <li><strong>PBFT Quorum Gate:</strong> If the action is state-mutating, the proposing node initiates a <span class="math">PREPREPARE</span> consensus phase. The payload is cryptographically hashed, signed via Ed25519, and broadcasted over mTLS HTTP/2. Execution occurs only when <span class="math">2f+1</span> nodes emit localized <span class="math">COMMIT</span> signatures [3].</li>
     </ul>
 
@@ -272,7 +272,7 @@ footer a:hover { color: var(--text); }
     <ul>
       <li><strong>Byzantine Immutability:</strong> The cluster will never execute conflicting directives or authorize malicious intent as long as adversarial agents do not exceed the threshold [3].</li>
       <li><strong>Strict Replay Protection:</strong> BATS enforces middleware that validates <span class="math">X-BATS-Nonce</span> state uniqueness within a maximum 30-second timestamp drift envelope.</li>
-      <li><strong>Adversarial Model Resilience:</strong> In configurations where independent nodes employ distinct LLM foundational models, the system becomes highly resistant to zero-day model-specific prompt injections.</li>
+      <li><strong>The Council of Agents (Adversarial Model Resilience):</strong> BATS natively enforces Byzantine LLM diversity by defaulting clustering nodes to completely discrete intelligence providers (Node 1 &rarr; Anthropic, Node 2 &rarr; OpenAI, Node 3 &rarr; Google, Node 4 &rarr; Local Heuristics). This multi-brain architecture ensures the system is highly resistant to zero-day model-specific prompt injections or hallucinations.</li>
     </ul>
   </section>
 
