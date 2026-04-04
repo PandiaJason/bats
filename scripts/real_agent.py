@@ -31,15 +31,28 @@ def call_gemini(messages):
     
     req = urllib.request.Request(url, data=json.dumps(payload).encode("utf-8"), headers={"Content-Type": "application/json"}, method="POST")
     
-    try:
-        with urllib.request.urlopen(req, timeout=30) as response:
-            raw = response.read()
-            data = json.loads(raw.decode("utf-8"))
-            text = data["candidates"][0]["content"]["parts"][0]["text"]
-            return json.loads(text)
-    except Exception as e:
-        print(f"LLM Error: {e}")
-        return {"thought": f"Error calling LLM: {e}", "command": "DONE"}
+    # Retry with backoff for rate limits
+    for attempt in range(4):
+        try:
+            with urllib.request.urlopen(req, timeout=30) as response:
+                raw = response.read()
+                data = json.loads(raw.decode("utf-8"))
+                text = data["candidates"][0]["content"]["parts"][0]["text"]
+                return json.loads(text)
+        except urllib.error.HTTPError as e:
+            if e.code == 429 and attempt < 3:
+                wait = (attempt + 1) * 15
+                print(f"[Rate limited, retrying in {wait}s...]")
+                time.sleep(wait)
+                # Rebuild the request since it was consumed
+                req = urllib.request.Request(url, data=json.dumps(payload).encode("utf-8"), headers={"Content-Type": "application/json"}, method="POST")
+                continue
+            print(f"LLM Error: {e}")
+            return {"thought": f"Error calling LLM: {e}", "command": "DONE"}
+        except Exception as e:
+            print(f"LLM Error: {e}")
+            return {"thought": f"Error calling LLM: {e}", "command": "DONE"}
+    return {"thought": "Exhausted retries", "command": "DONE"}
 
 def execute_local(action):
     print(f"   [Executing locally]: `{action}`")
