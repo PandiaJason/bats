@@ -1,5 +1,5 @@
 #!/bin/bash
-# gen-certs.sh — Generate mTLS certificates and Ed25519 identities for BATS cluster.
+# gen-certs.sh — Generate mTLS certificates and Ed25519 identities for WAND node.
 # Supports arbitrary node counts. Usage: ./scripts/gen-certs.sh [node_count]
 set -e
 
@@ -20,10 +20,10 @@ openssl req -x509 -new -nodes \
     -key "$CERT_DIR/ca.key" \
     -sha256 -days 3650 \
     -out "$CERT_DIR/ca.crt" \
-    -subj "/CN=BATS-CA/O=Xs10s Research" 2>/dev/null
+    -subj "/CN=WAND-CA/O=Xs10s Research" 2>/dev/null
 
 # Inline Go program for Ed25519 key generation (no external deps)
-KEYGEN=$(mktemp /tmp/bats_keygen_XXXXXX.go)
+KEYGEN=$(mktemp /tmp/wand_keygen_XXXXXX.go)
 cat > "$KEYGEN" <<'GOEOF'
 package main
 import (
@@ -44,7 +44,7 @@ for i in $(seq 1 "$NODE_COUNT"); do
     echo "[gen-certs] Generating TLS cert + Ed25519 identity for $NODE..."
 
     # SAN config for localhost + Docker service name
-    SAN_CONF=$(mktemp /tmp/bats_san_XXXXXX.cnf)
+    SAN_CONF=$(mktemp /tmp/wand_san_XXXXXX.cnf)
     cat > "$SAN_CONF" <<EOF
 [req]
 distinguished_name = req_dn

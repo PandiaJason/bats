@@ -3,7 +3,7 @@ mkdir -p certs
 
 # 1. Generate Root CA
 openssl genrsa -out certs/ca.key 2048
-openssl req -x509 -new -nodes -key certs/ca.key -sha256 -days 365 -out certs/ca.crt -subj "/CN=BATS-CA"
+openssl req -x509 -new -nodes -key certs/ca.key -sha256 -days 365 -out certs/ca.crt -subj "/CN=WAND-CA"
 
 # Create a temporary Go generator for Ed25519
 cat > gen_identity.go <<EOF

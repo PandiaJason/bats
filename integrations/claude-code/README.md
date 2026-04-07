@@ -1,8 +1,8 @@
-# BATS MCP Integration for Claude Code / Antigravity
+# WAND MCP Integration for Claude Code / Antigravity
 
-A Model Context Protocol (MCP) server that gives Claude Code, Antigravity, or any MCP-compatible AI assistant access to BATS safety validation.
+A Model Context Protocol (MCP) server that gives Claude Code, Antigravity, or any MCP-compatible AI assistant access to WAND safety validation.
 
-Every proposed action is routed through your BATS node's heuristic safety gate and Byzantine consensus layer before execution.
+Every proposed action is routed through your WAND node's heuristic safety gate and Byzantine consensus layer before execution.
 
 ## Quick Setup
 
@@ -10,15 +10,15 @@ Every proposed action is routed through your BATS node's heuristic safety gate a
 
 ```bash
 cd integrations/claude-code
-go build -o bats-mcp mcp_server.go
+go build -o wand-mcp mcp_server.go
 ```
 
 Move it somewhere on your PATH:
 ```bash
-mv bats-mcp /usr/local/bin/
+mv wand-mcp /usr/local/bin/
 ```
 
-### 2. Start a BATS Cluster
+### 2. Start a WAND Node
 
 ```bash
 # Option A: Docker (recommended)
@@ -35,8 +35,8 @@ go run cmd/node/main.go node1 8001
 ```json
 {
   "mcpServers": {
-    "bats-safety": {
-      "command": "/usr/local/bin/bats-mcp",
+    "wand-safety": {
+      "command": "/usr/local/bin/wand-mcp",
       "args": ["--node", "localhost:8001", "--insecure"]
     }
   }
@@ -48,8 +48,8 @@ go run cmd/node/main.go node1 8001
 ```json
 {
   "mcpServers": {
-    "bats-safety": {
-      "command": "/usr/local/bin/bats-mcp",
+    "wand-safety": {
+      "command": "/usr/local/bin/wand-mcp",
       "args": ["--node", "localhost:8001", "--insecure"]
     }
   }
@@ -74,14 +74,14 @@ Action: rm -rf /
 Reason: Blocked: matched dangerous pattern 'rm -rf'
 Confidence: 0.99
 
-DO NOT execute this action. It has been rejected by the BATS safety layer.
+DO NOT execute this action. It has been rejected by the WAND safety layer.
 ```
 
 ## Available Tools
 
 ### `validate_action`
 
-Validates any proposed action through the BATS safety pipeline.
+Validates any proposed action through the WAND safety pipeline.
 
 ```
 Action: "rm -rf /tmp/data"
@@ -96,7 +96,7 @@ Action: "UPDATE users SET role = 'admin'"
 
 ### `check_health`
 
-Returns the current status of the connected BATS node (liveness, cluster view).
+Returns the current status of the connected WAND node (liveness, cluster view).
 
 ### `get_audit_log`
 
@@ -111,19 +111,19 @@ Claude Code / Antigravity
        | JSON-RPC 2.0 (stdio)
        v
   +--------------------+
-  |  bats-mcp          |
+  |  wand-mcp          |
   |  (this binary)     |
   +--------+-----------+
            | HTTPS + X-BATS-Nonce + X-BATS-Timestamp
            v
   +--------------------+
-  |  BATS Node         |
+  |  WAND Node         |
   |  :8001             |
   |  AI Gate + PBFT    |
   +--------------------+
 ```
 
-**Security headers:** Every request from `bats-mcp` to the BATS node includes:
+**Security headers:** Every request from `wand-mcp` to the WAND node includes:
 - `X-BATS-Nonce` — unique per-request identifier for replay protection
 - `X-BATS-Timestamp` — current unix timestamp (30-second drift window)
 
@@ -131,7 +131,7 @@ Claude Code / Antigravity
 
 | Flag | Description | Default |
 |:---|:---|:---|
-| `--node` | BATS node address (host:port) | `localhost:8001` |
+| `--node` | WAND node address (host:port) | `localhost:8001` |
 | `--insecure` | Skip TLS certificate verification (dev only) | `false` |
 
 ## Development

@@ -77,7 +77,7 @@ func warmup(client *http.Client, url string) {
 	}
 }
 
-// TestBenchmarkLatency boots a real 4-node BATS cluster and measures
+// TestBenchmarkLatency boots a real 4-node WAND cluster and measures
 // end-to-end latency with proper warmup to eliminate cold-start TLS skew.
 func TestBenchmarkLatency(t *testing.T) {
 	os.Chdir("/Users/admin/BATS/bats/")
@@ -121,7 +121,7 @@ func TestBenchmarkLatency(t *testing.T) {
 
 	iterations := 20
 
-	fmt.Println("=== BATS CLUSTER LATENCY BENCHMARK (4 nodes, HTTP/2, PBFT) ===")
+	fmt.Println("=== WAND CLUSTER LATENCY BENCHMARK (4 nodes, HTTP/2, Deterministic Policy) ===")
 
 	// --- SAFE_READ: fast-path ---
 	fmt.Println("[1/3] SAFE_READ (fast-path)...")
@@ -145,8 +145,8 @@ func TestBenchmarkLatency(t *testing.T) {
 	fmt.Printf("\n📊 BENCHMARK RESULTS (4-node cluster, post-warmup)\n")
 	fmt.Printf("%-30s | %-12s | %-12s | %-12s\n", "Action Type", "p50", "p95", "p99")
 	fmt.Printf("-------------------------------|--------------|--------------|-------------\n")
-	fmt.Printf("%-30s | %-12v | %-12v | %-12v\n", "SAFE_READ (Fast Bypass)", fP50, fP95, fP99)
-	fmt.Printf("%-30s | %-12v | %-12v | %-12v\n", "SAFE Write (Sync PBFT)", sP50, sP95, sP99)
+	fmt.Printf("%-30s | %-12v | %-12v | %-12v\n", "SAFE_READ (Policy Approved)", fP50, fP95, fP99)
+	fmt.Printf("%-30s | %-12v | %-12v | %-12v\n", "SAFE Write (Policy Approved)", sP50, sP95, sP99)
 	fmt.Printf("%-30s | %-12v | %-12v | %-12v\n", "UNSAFE (Immediate Reject)", uP50, uP95, uP99)
 	fmt.Println()
 
@@ -158,7 +158,7 @@ func TestBenchmarkLatency(t *testing.T) {
 		t.Errorf("FAIL: SAFE_READ p95=%v exceeds 20ms target (TLS warmup issue?)", fP95)
 	}
 	if len(syncLat) == 0 {
-		t.Errorf("FAIL: No SAFE writes completed (PBFT broken)")
+		t.Errorf("FAIL: No SAFE writes completed (policy engine broken)")
 	}
 	if len(syncLat) > 0 && sP50 > 200*time.Millisecond {
 		t.Errorf("FAIL: SAFE write p50=%v exceeds 200ms target", sP50)
@@ -171,8 +171,8 @@ func TestBenchmarkLatency(t *testing.T) {
 	table := fmt.Sprintf(
 		"| Action Type | p50 | p95 | p99 |\n"+
 			"|---|---|---|---|\n"+
-			"| SAFE_READ (Fast Bypass) | %v | %v | %v |\n"+
-			"| SAFE Write (Sync PBFT) | %v | %v | %v |\n"+
+			"| SAFE_READ (Policy Approved) | %v | %v | %v |\n"+
+			"| SAFE Write (Policy Approved) | %v | %v | %v |\n"+
 			"| UNSAFE (Immediate Reject) | %v | %v | %v |\n",
 		fP50, fP95, fP99, sP50, sP95, sP99, uP50, uP95, uP99,
 	)

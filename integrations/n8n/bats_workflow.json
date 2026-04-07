@@ -1,5 +1,5 @@
 {
-  "name": "BATS Safety Gate",
+  "name": "WAND Safety Gate",
   "nodes": [
     {
       "parameters": {
@@ -31,7 +31,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "https://bats-cluster:8001/validate",
+        "url": "https://wand-node:8001/validate",
         "sendBody": true,
         "bodyParameters": {
           "parameters": [
@@ -45,7 +45,7 @@
           "allowUnauthorizedCerts": true
         }
       },
-      "name": "BATS Validator",
+      "name": "WAND Validator",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
       "position": [650, 300]
@@ -55,7 +55,7 @@
         "conditions": {
           "boolean": [
             {
-              "value1": "={{$node[\"BATS Validator\"].json[\"approved\"]}}",
+              "value1": "={{$node[\"WAND Validator\"].json[\"approved\"]}}",
               "value2": true
             }
           ]
@@ -81,9 +81,9 @@
       "main": [[{ "node": "AI Agent", "type": "main", "index": 0 }]]
     },
     "AI Agent": {
-      "main": [[{ "node": "BATS Validator", "type": "main", "index": 0 }]]
+      "main": [[{ "node": "WAND Validator", "type": "main", "index": 0 }]]
     },
-    "BATS Validator": {
+    "WAND Validator": {
       "main": [[{ "node": "Is Approved?", "type": "main", "index": 0 }]]
     },
     "Is Approved?": {

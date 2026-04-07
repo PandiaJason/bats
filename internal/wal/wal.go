@@ -14,13 +14,14 @@ import (
 )
 
 type WALEntry struct {
-	Timestamp       int64           `json:"timestamp"`
-	ActionHash      string          `json:"action_hash"`
-	ProposingAgent  string          `json:"proposing_agent"`
-	ConsensusResult string          `json:"consensus_result"`
-	NodeVotes       map[string]bool `json:"node_votes,omitempty"`
-	PrevHash        string          `json:"prev_hash"`
-	EntryHash       string          `json:"entry_hash"`
+	Timestamp        int64             `json:"timestamp"`
+	ActionHash       string            `json:"action_hash"`
+	ProposingAgent   string            `json:"proposing_agent"`
+	ValidationResult string            `json:"validation_result"`
+	Annotations      map[string]string `json:"annotations,omitempty"`
+	NodeVotes        map[string]bool   `json:"node_votes,omitempty"` // Kept for legacy compatibility when exporting
+	PrevHash         string            `json:"prev_hash"`
+	EntryHash        string            `json:"entry_hash"`
 }
 
 type WAL struct {
@@ -61,21 +62,21 @@ func NewWAL(path string) (*WAL, error) {
 }
 
 // Write the hash-chained entry to the log
-func (w *WAL) Append(actionHash, agentID, result string, votes map[string]bool) error {
+func (w *WAL) Append(actionHash, agentID, result string, annotations map[string]string) error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
 	entry := WALEntry{
-		Timestamp:       time.Now().UnixNano(),
-		ActionHash:      actionHash,
-		ProposingAgent:  agentID,
-		ConsensusResult: result,
-		NodeVotes:       votes,
-		PrevHash:        w.lastHash,
+		Timestamp:        time.Now().UnixNano(),
+		ActionHash:       actionHash,
+		ProposingAgent:   agentID,
+		ValidationResult: result,
+		Annotations:      annotations,
+		PrevHash:         w.lastHash,
 	}
 
 	// Cryptographic Hash Chain: SHA256(PrevHash + Timestamp + ActionHash + Result)
-	raw := fmt.Sprintf("%s|%d|%s|%s", w.lastHash, entry.Timestamp, entry.ActionHash, entry.ConsensusResult)
+	raw := fmt.Sprintf("%s|%d|%s|%s", w.lastHash, entry.Timestamp, entry.ActionHash, entry.ValidationResult)
 	hash := sha256.Sum256([]byte(raw))
 	entry.EntryHash = hex.EncodeToString(hash[:])
 
@@ -163,7 +164,7 @@ func (w *WAL) ExportCSV(writer io.Writer) error {
 				fmt.Sprintf("%d", e.Timestamp),
 				e.ActionHash,
 				e.ProposingAgent,
-				e.ConsensusResult,
+				e.ValidationResult,
 				e.PrevHash,
 				e.EntryHash,
 			})

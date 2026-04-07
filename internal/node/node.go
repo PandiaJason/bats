@@ -1,53 +1,34 @@
 package node
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 	"os"
-	"sort"
-	"strconv"
-	"strings"
 	"sync"
 	"time"
 
 	"bats/internal/ai"
-	"bats/internal/consensus"
 	"bats/internal/crypto"
 	"bats/internal/network"
+	"bats/internal/policy"
 	"bats/internal/types"
 	"bats/internal/wal"
 
 	"google.golang.org/protobuf/proto"
 )
 
-// ConsensusTimeout is the maximum time HandleValidate will block waiting
-// for PBFT quorum on a state-mutating action. Default: 800ms.
-// Override with BATS_CONSENSUS_TIMEOUT_MS environment variable.
-var ConsensusTimeout = 800 * time.Millisecond
 
-func init() {
-	if v := os.Getenv("BATS_CONSENSUS_TIMEOUT_MS"); v != "" {
-		if ms, err := strconv.Atoi(v); err == nil {
-			ConsensusTimeout = time.Duration(ms) * time.Millisecond
-		}
-	}
-}
 
-// Node represents a single BATS cluster participant.
-// It owns the consensus engine, WAL, AI safety gate, and HTTP server.
+// Node represents a single WAND enforcement layer node.
+// It owns the deterministic policy engine, WAL, optional AI annotator, and HTTP server.
 type Node struct {
 	ID        string
 	Port      string
 	Peers     []string
-	Consensus *consensus.Consensus
 	Network   *network.Client
 	WAL       *wal.WAL
 	AI        ai.Provider
-	pending   map[[64]byte]chan bool
-	pendingMu sync.Mutex
 	mu        sync.Mutex
 
 	// SeenNonces prevents replay attacks by tracking used nonces.
@@ -57,27 +38,8 @@ type Node struct {
 
 func NewNode(id string, port string, peers []string) *Node {
 	log, _ := wal.NewWAL(id)
-
-	// Load Ed25519 identity for this node
-	priv, _ := os.ReadFile("certs/" + id + ".identity")
-	pub, _ := os.ReadFile("certs/" + id + ".pub")
-
-	peerPubs := make(map[string][]byte)
-	peerPubs[id] = pub
-
-	for _, p := range peers {
-		// Derive peer ID from address suffix (e.g. "localhost:8001" -> "node1")
-		pID := "node" + p[len(p)-1:]
-		peerPub, _ := os.ReadFile("certs/" + pID + ".pub")
-		peerPubs[pID] = peerPub
-	}
-
+	
 	netClient := network.NewClient(id)
-
-	f := (len(peerPubs) - 1) / 3
-	if f == 0 {
-		f = 1
-	}
 
 	providerStr := os.Getenv("NODE_LLM")
 	if providerStr == "" {
@@ -102,36 +64,13 @@ func NewNode(id string, port string, peers []string) *Node {
 		Network: netClient,
 		WAL:     log,
 		AI:      ai.GetProvider(providerStr),
-		pending: make(map[[64]byte]chan bool),
 	}
 
-	n.Consensus = consensus.New(id, peers, f, log, priv, peerPubs, netClient, n.onCommit)
-	go n.Consensus.Monitor()
 	return n
 }
 
-// onCommit is called by the consensus engine when a digest reaches 2f+1 commits.
-// It unblocks the synchronous wait in HandleValidate for write operations.
-func (n *Node) onCommit(digest [64]byte) {
-	n.pendingMu.Lock()
-	defer n.pendingMu.Unlock()
-	if ch, ok := n.pending[digest]; ok {
-		ch <- true
-		delete(n.pending, digest)
-	}
-}
-
+// Legacy cluster endpoints — kept as no-op stubs for backward compatibility.
 func (n *Node) HandleConsensus(w http.ResponseWriter, r *http.Request) {
-	var msg types.ConsensusMessage
-	data, err := io.ReadAll(r.Body)
-	if err != nil {
-		return
-	}
-	if err := proto.Unmarshal(data, &msg); err != nil {
-		http.Error(w, "Invalid message", http.StatusBadRequest)
-		return
-	}
-	n.Consensus.Handle(&msg)
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -139,8 +78,8 @@ func (n *Node) StatusHandler(w http.ResponseWriter, r *http.Request) {
 	status := &types.NodeStatus{
 		Id:       n.ID,
 		Alive:    true,
-		View:     n.Consensus.View,
-		IsLeader: n.Consensus.IsLeader(),
+		View:     1,
+		IsLeader: false,
 	}
 	data, _ := proto.Marshal(status)
 	w.Header().Set("Content-Type", "application/x-protobuf")
@@ -148,199 +87,94 @@ func (n *Node) StatusHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (n *Node) HandleAITask(w http.ResponseWriter, r *http.Request) {
-	if !n.Consensus.IsLeader() {
-		n.forward(w, r)
-		return
-	}
-	prompt := r.URL.Query().Get("prompt")
-	if prompt == "" {
-		http.Error(w, "Missing prompt", http.StatusBadRequest)
-		return
-	}
-
-	fmt.Printf("[BATS] Node %s: Querying %s for Multi-Model Consensus...\n", n.ID, n.AI.Name())
-	result, err := n.AI.Query(prompt)
-	if err != nil {
-		http.Error(w, "AI Query failed", http.StatusInternalServerError)
-		return
-	}
-
-	digest := crypto.Digest(result)
-	n.Consensus.Start(digest)
-	fmt.Fprintf(w, "Task submitted. Result: %s\n", result)
+    http.Error(w, "AI mult-model consensus removed in WAND", http.StatusNotImplemented)
 }
 
 func (n *Node) HandleJoin(w http.ResponseWriter, r *http.Request) {
-	var req types.MembershipJoinRequest
-	data, _ := io.ReadAll(r.Body)
-	if err := proto.Unmarshal(data, &req); err != nil {
-		http.Error(w, "Invalid proto", http.StatusBadRequest)
-		return
-	}
-
-	fmt.Printf("[BATS] Node %s: Received Join Request from %s (%s)\n", n.ID, req.Id, req.Port)
-	n.Consensus.AddPeer(req.Id, req.PublicKey)
-
-	update := &types.ClusterUpdate{
-		NewNode: &types.NodeStatus{Id: req.Id, Port: req.Port, Alive: true},
-	}
-	updateData, _ := proto.Marshal(update)
-
-	peers := n.Consensus.GetPeers()
-	for _, p := range peers {
-		if p == req.Port || strings.Contains(p, req.Port) {
-			continue
-		}
-		go func(addr string) {
-			client := n.Network.GetHTTPClient()
-			client.Post("https://"+addr+"/cluster-update", "application/x-protobuf", bytes.NewBuffer(updateData))
-		}(p)
-	}
-
 	resp := &types.MembershipJoinResponse{
 		Approved:    true,
-		CurrentView: n.Consensus.View,
-		F:           uint32(n.Consensus.F),
+		CurrentView: 1,
+		F:           1,
 	}
-	for id := range n.Consensus.PublicKeys {
-		resp.Nodes = append(resp.Nodes, &types.NodeStatus{Id: id})
-	}
-
 	respData, _ := proto.Marshal(resp)
 	w.WriteHeader(http.StatusOK)
 	w.Write(respData)
 }
 
 func (n *Node) HandleClusterUpdate(w http.ResponseWriter, r *http.Request) {
-	var update types.ClusterUpdate
-	data, _ := io.ReadAll(r.Body)
-	if err := proto.Unmarshal(data, &update); err != nil {
-		return
-	}
-	fmt.Printf("[BATS] Node %s: Cluster update. Adding Node %s\n", n.ID, update.NewNode.Id)
-	pub, _ := os.ReadFile("certs/" + update.NewNode.Id + ".pub")
-	n.Consensus.AddPeer(update.NewNode.Id, pub)
 	w.WriteHeader(http.StatusOK)
 }
 
-// HandleValidate is the core safety pipeline. It implements a two-stage gate:
-//
-//  1. AI Heuristic Gate: Classifies the action with a confidence score.
-//     If the action is UNSAFE, it is blocked immediately.
-//
-//  2. Consensus Gate: Determines whether to use the fast-path or sync-path.
-//     SAFE_READ actions with confidence >= 0.95 are approved optimistically
-//     in under 100ms, with PBFT running asynchronously in the background
-//     for audit trail consistency.
-//     All other SAFE actions go through synchronous PBFT (blocks until 2f+1).
-func (n *Node) HandleValidate(w http.ResponseWriter, r *http.Request) {
-	if !n.Consensus.IsLeader() {
-		n.forward(w, r)
-		return
-	}
 
+// HandleValidate is the core WAND safety pipeline.
+// Evaluates actions strictly via the deterministic policy engine.
+//
+// Three possible outcomes:
+//   - BLOCK:     Immediately denied. Logged to WAL.
+//   - CHALLENGE: Risky action flagged. Agent must ask the user to re-approve.
+//   - ALLOW:     No dangerous pattern matched. Approved and logged.
+func (n *Node) HandleValidate(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Action string `json:"action"`
 	}
 	json.NewDecoder(r.Body).Decode(&req)
 
-	// --- Stage 1: AI Safety Evaluation ---
-	verdict := n.AI.Evaluate(req.Action)
-	fmt.Printf("[BATS] Node %s: Safety verdict for [%s]: %s (confidence=%.2f)\n",
-		n.ID, req.Action, verdict.Classification, verdict.Confidence)
-
-	if verdict.Classification == "UNSAFE" {
-		fmt.Printf("[BATS-BLOCKED] Node %s: %s\n", n.ID, verdict.Reason)
-
-		// Log the blocked action to the tamper-evident WAL
-		n.WAL.Append(
-			fmt.Sprintf("%x", crypto.Digest(req.Action)),
-			"external-agent",
-			"BLOCKED",
-			nil,
-		)
-
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{
-			"approved":   false,
-			"reason":     verdict.Reason,
-			"confidence": verdict.Confidence,
-		})
-		return
-	}
-
+	// Single deterministic safety evaluation — sub-millisecond, no AI
+	verdict := policy.Evaluate(req.Action)
 	digest := crypto.Digest(req.Action)
+	digestHex := fmt.Sprintf("%x", digest)
 
-	// --- Stage 2: Consensus Path Selection ---
+	w.Header().Set("Content-Type", "application/json")
 
-	if verdict.IsFastPathEligible() {
-		// FAST-PATH: Confidence >= 0.95 for a non-mutating read.
-		// Response goes out FIRST. All I/O (WAL, logging, PBFT) is deferred
-		// to a background goroutine to keep p95 latency under 2ms.
-		digestHex := fmt.Sprintf("%x", digest)
+	switch verdict.Decision {
 
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{
-			"approved":   true,
-			"digest":     digestHex,
-			"fast_path":  true,
-			"confidence": verdict.Confidence,
-		})
+	case "BLOCK":
+		fmt.Printf("[WAND-BLOCKED] Node %s: %s\n", n.ID, verdict.Reason)
 
-		// All post-response work: WAL persistence, audit log, background PBFT.
-		// None of this blocks the client.
 		go func() {
-			n.WAL.Append(digestHex, "external-agent", "APPROVED_FAST_PATH", nil)
-			n.Consensus.Start(digest)
+			n.WAL.Append(digestHex, "external-agent", "BLOCKED", nil)
 		}()
-		return
-	}
 
-	// SYNC-PATH: State-mutating action. Block until PBFT reaches 2f+1 commits.
-	fmt.Printf("[BATS-SYNC] Node %s: confidence=%.2f, initiating synchronous PBFT\n",
-		n.ID, verdict.Confidence)
-
-	ch := make(chan bool, 1)
-	n.pendingMu.Lock()
-	n.pending[digest] = ch
-	n.pendingMu.Unlock()
-
-	n.Consensus.Start(digest)
-
-	select {
-	case <-ch:
-		n.WAL.Append(
-			fmt.Sprintf("%x", digest),
-			"external-agent",
-			"COMMITTED",
-			nil,
-		)
-
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{
-			"approved":   true,
-			"digest":     fmt.Sprintf("%x", digest),
-			"fast_path":  false,
-			"confidence": verdict.Confidence,
-		})
-
-	case <-time.After(ConsensusTimeout):
-		n.pendingMu.Lock()
-		delete(n.pending, digest)
-		n.pendingMu.Unlock()
-
-		n.WAL.Append(
-			fmt.Sprintf("%x", digest),
-			"external-agent",
-			"TIMEOUT",
-			nil,
-		)
-
-		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]interface{}{
 			"approved": false,
-			"reason":   fmt.Sprintf("consensus timeout after %v", ConsensusTimeout),
+			"decision": "BLOCK",
+			"reason":   verdict.Reason,
 		})
+
+	case "CHALLENGE":
+		fmt.Printf("[WAND-CHALLENGE] Node %s: %s\n", n.ID, verdict.Reason)
+
+		go func() {
+			n.WAL.Append(digestHex, "external-agent", "CHALLENGED", nil)
+		}()
+
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"approved":  false,
+			"decision":  "CHALLENGE",
+			"reason":    verdict.Reason,
+			"challenge": "This action is risky. The agent MUST ask the user for explicit re-approval before proceeding.",
+		})
+
+	default: // ALLOW
+		fmt.Printf("[WAND-APPROVED] Node %s: %s\n", n.ID, verdict.Reason)
+
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"approved": true,
+			"decision": "ALLOW",
+			"digest":   digestHex,
+		})
+
+		// Async WAL logging and optional non-authoritative AI annotation
+		go func(action, hexHash string) {
+			annotations := map[string]string{}
+			if n.AI != nil {
+				meta, err := n.AI.Query("Provide brief metadata annotation for this action: " + action)
+				if err == nil {
+					annotations["ai_metadata"] = meta
+				}
+			}
+			n.WAL.Append(hexHash, "external-agent", "APPROVED", annotations)
+		}(req.Action, digestHex)
 	}
 }
 
@@ -354,7 +188,7 @@ func (n *Node) HandleAuditExport(w http.ResponseWriter, r *http.Request) {
 	switch format {
 	case "csv":
 		w.Header().Set("Content-Type", "text/csv")
-		w.Header().Set("Content-Disposition", "attachment; filename=bats_audit.csv")
+		w.Header().Set("Content-Disposition", "attachment; filename=wand_audit.csv")
 		n.WAL.ExportCSV(w)
 	default:
 		w.Header().Set("Content-Type", "application/json")
@@ -364,7 +198,7 @@ func (n *Node) HandleAuditExport(w http.ResponseWriter, r *http.Request) {
 
 // requireSecurityHeaders is middleware that enforces replay attack prevention.
 // Every protected request must carry:
-//   - X-BATS-Nonce: a unique, never-reused string
+//   - X-BATS-Nonce: a unique, never-reused string (header name kept for API compatibility)
 //   - X-BATS-Timestamp: unix epoch seconds, must be within +/- 30s of server time
 func (n *Node) requireSecurityHeaders(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -385,7 +219,7 @@ func (n *Node) requireSecurityHeaders(next http.HandlerFunc) http.HandlerFunc {
 		}
 
 		if _, exists := n.SeenNonces.LoadOrStore(nonce, ts); exists {
-			fmt.Printf("[BATS-SECURITY] Node %s: Replay attack blocked. Nonce: %s\n", n.ID, nonce)
+			fmt.Printf("[WAND-SECURITY] Node %s: Replay attack blocked. Nonce: %s\n", n.ID, nonce)
 			http.Error(w, `{"error":"Replayed nonce detected"}`, http.StatusUnauthorized)
 			return
 		}
@@ -417,38 +251,8 @@ func (n *Node) Start(port string) {
 	certFile := "certs/" + n.ID + ".crt"
 	keyFile := "certs/" + n.ID + ".key"
 
-	fmt.Printf("[BATS-CORE] Node %-6s | PORT: %-5s | TIMEOUT: %v | STATUS: ACTIVE (v3.1)\n", n.ID, port, ConsensusTimeout)
+	fmt.Printf("[WAND-CORE] Node %-6s | PORT: %-5s | STATUS: ENFORCER ACTIVE (v4.0)\n", n.ID, port)
 	http.ListenAndServeTLS(":"+port, certFile, keyFile, mux)
 }
 
-func (n *Node) forward(w http.ResponseWriter, r *http.Request) {
-	var allNodes []string
-	for id := range n.Consensus.PublicKeys {
-		allNodes = append(allNodes, id)
-	}
-	sort.Strings(allNodes)
-	leaderID := allNodes[int(n.Consensus.View%uint64(len(allNodes)))]
 
-	ports := map[string]string{
-		"node1": "8001", "node2": "8002", "node3": "8003",
-		"node4": "8004", "node5": "8005",
-	}
-	leaderAddr := "localhost:" + ports[leaderID]
-
-	url := fmt.Sprintf("https://%s%s", leaderAddr, r.URL.Path)
-	if r.URL.RawQuery != "" {
-		url += "?" + r.URL.RawQuery
-	}
-
-	body, _ := io.ReadAll(r.Body)
-	req, _ := http.NewRequest(r.Method, url, bytes.NewBuffer(body))
-	req.Header = r.Header
-
-	resp, err := n.Network.GetHTTPClient().Do(req)
-	if err != nil {
-		http.Error(w, "Forwarding failed", http.StatusBadGateway)
-		return
-	}
-	defer resp.Body.Close()
-	io.Copy(w, resp.Body)
-}

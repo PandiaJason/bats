@@ -13,7 +13,7 @@ COPY . .
 # Build all binaries
 RUN CGO_ENABLED=0 go build -ldflags="-s -w" -o /node ./cmd/node/main.go
 RUN CGO_ENABLED=0 go build -ldflags="-s -w" -o /dashboard ./cmd/dashboard/main.go
-RUN CGO_ENABLED=0 go build -ldflags="-s -w" -o /bats ./cmd/bats/main.go
+RUN CGO_ENABLED=0 go build -ldflags="-s -w" -o /wand ./cmd/wand/main.go
 
 # Minimal runtime
 FROM alpine:3.19
@@ -24,7 +24,7 @@ WORKDIR /
 
 COPY --from=builder /node /node
 COPY --from=builder /dashboard /dashboard
-COPY --from=builder /bats /bats
+COPY --from=builder /wand /wand
 
 EXPOSE 8001 9000
 

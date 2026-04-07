@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>BATS — Byzantine Agent Trust System</title>
-<meta name="description" content="Zero-trust consensus layer for autonomous AI agents. Stop unsafe actions before they execute.">
+<title>WAND — Watch. Audit. Never Delegate.</title>
+<meta name="description" content="MCP-based deterministic control and audit layer for AI agents. Stop unsafe actions before they execute.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Instrument+Serif:ital@0;1&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -332,7 +332,7 @@ section {
 }
 .terminal .t-blocked { color: #e74c3c; }
 .terminal .t-approved { color: #2ecc71; }
-.terminal .t-pbft { color: #60a5fa; }
+.terminal .t-challenge { color: #f5a623; }
 .terminal .t-comment { color: #555; }
 .terminal .t-label { color: #eee; }
 
@@ -472,7 +472,7 @@ footer {
 
 <!-- Nav -->
 <nav>
-  <a href="#" class="nav-logo">BATS</a>
+  <a href="#" class="nav-logo">WAND</a>
   <div class="nav-right">
     <a href="#how" class="nav-link">How it works</a>
     <a href="#benchmarks" class="nav-link">Benchmarks</a>
@@ -484,21 +484,21 @@ footer {
 
 <!-- Hero -->
 <div class="hero">
-  <div class="hero-bg-text">BATS</div>
-  <div class="hero-tag">Zero-Trust AI Safety Infrastructure</div>
+  <div class="hero-bg-text">WAND</div>
+  <div class="hero-tag">Deterministic AI Safety Infrastructure</div>
   <h1>
-    Stop unsafe AI actions<br>
-    <em>before they execute.</em>
+    Watch. Audit.<br>
+    <em>Never Delegate.</em>
   </h1>
   <div class="hero-bottom">
     <div class="hero-stats">
       <div>
-        <div class="hero-stat-value">368us</div>
+        <div class="hero-stat-value">&lt;500us</div>
         <div class="hero-stat-label">Dangerous block</div>
       </div>
       <div>
-        <div class="hero-stat-value">6.5ms</div>
-        <div class="hero-stat-label">Full consensus</div>
+        <div class="hero-stat-value">0</div>
+        <div class="hero-stat-label">AI in decision path</div>
       </div>
       <div>
         <div class="hero-stat-value">100%</div>
@@ -514,7 +514,7 @@ footer {
   <div class="section-num">01 -- The Problem</div>
   <div class="incidents-header fade-up">
     <h2 class="incidents-title">Real damage.<br>Real incidents.<br><em>No safety layer.</em></h2>
-    <p class="incidents-desc">Every incident below happened because there was nothing between the AI agent and production infrastructure. BATS makes each of these structurally impossible.</p>
+    <p class="incidents-desc">Every incident below happened because there was nothing between the AI agent and production infrastructure. WAND makes each of these structurally impossible.</p>
   </div>
   <div class="incidents-list">
     <div class="incident fade-up">
@@ -556,33 +556,33 @@ footer {
 <section id="how">
   <div class="section-num">02 -- How It Works</div>
   <div class="how-header fade-up">
-    <h2 class="how-title">Every action.<br><em>Mathematically verified.</em></h2>
-    <p style="font-size:16px; color:var(--text-secondary); line-height:1.8;">BATS sits between your AI agent and your infrastructure. Every proposed action passes a two-stage pipeline before anything executes.</p>
+    <h2 class="how-title">Every action.<br><em>Deterministically verified.</em></h2>
+    <p style="font-size:16px; color:var(--text-secondary); line-height:1.8;">WAND sits between your AI agent and your infrastructure. Every proposed action is evaluated by a deterministic policy engine — no AI, no consensus, no probabilistic reasoning.</p>
   </div>
   <div class="how-steps">
     <div class="how-step" data-num="1">
-      <span class="step-tag">Stage 01</span>
-      <div class="step-title">Agent Proposal</div>
-      <p class="step-desc">Any AI agent -- Claude Code, Cursor, AutoGen -- proposes an action via REST to the BATS leader node over mTLS.</p>
-      <div class="step-time amber">--></div>
+      <span class="step-tag">Watch</span>
+      <div class="step-title">Intercept</div>
+      <p class="step-desc">Any AI agent — Claude Code, Cursor, AutoGen — proposes an action via MCP or REST. WAND intercepts it before execution.</p>
+      <div class="step-time amber">→</div>
     </div>
     <div class="how-step" data-num="2">
-      <span class="step-tag">Stage 02</span>
-      <div class="step-title">Heuristic Safety Gate</div>
-      <p class="step-desc">A deterministic floor screens 58 diverse attack patterns instantly (e.g., shell redirects, <code>UPDATE without WHERE</code>). Surviving actions are sent to the Council.</p>
-      <div class="step-time red">368us</div>
+      <span class="step-tag">Evaluate</span>
+      <div class="step-title">Policy Engine</div>
+      <p class="step-desc">Deterministic pattern matching against 100+ dangerous patterns. BLOCK, CHALLENGE, or ALLOW. No AI. No confidence scores. No ambiguity.</p>
+      <div class="step-time red">&lt;500us</div>
     </div>
     <div class="how-step" data-num="3">
-      <span class="step-tag">Stage 03</span>
-      <div class="step-title">The Council of Agents</div>
-      <p class="step-desc">Writes are evaluated by a diverse council (Anthropic, OpenAI, Google) requiring 2f+1 cryptographic votes. One compromised LLM cannot approve alone.</p>
-      <div class="step-time blue">6.5ms</div>
+      <span class="step-tag">Audit</span>
+      <div class="step-title">Hash-Chained WAL</div>
+      <p class="step-desc">Every decision — blocked, challenged, or approved — is recorded with SHA-256(PrevHash + Data). Tamper-evident. SOC2 ready.</p>
+      <div class="step-time green">Immutable</div>
     </div>
     <div class="how-step" data-num="4">
-      <span class="step-tag">Stage 04</span>
-      <div class="step-title">Hash-Chained WAL</div>
-      <p class="step-desc">Every decision -- blocked or approved -- is recorded with SHA-256(PrevHash + Data). Tamper-evident. SOC2 ready.</p>
-      <div class="step-time green">Immutable</div>
+      <span class="step-tag">Never Delegate</span>
+      <div class="step-title">Zero AI Decisions</div>
+      <p class="step-desc">No LLM, no model, no probabilistic system ever decides what is safe. AI can annotate logs after the fact — never approve or block.</p>
+      <div class="step-time blue">Principle</div>
     </div>
   </div>
 </section>
@@ -592,7 +592,7 @@ footer {
   <div class="section-num">03 -- Performance</div>
   <div class="bench-header fade-up">
     <h2 class="bench-title">Real numbers.<br><em>No mocks.</em></h2>
-    <p style="font-size:16px; color:var(--text-secondary); line-height:1.8;">Measured on a real 4-node cluster over mTLS HTTP/2. TLS warmup included for steady-state accuracy. 20 iterations.</p>
+    <p style="font-size:16px; color:var(--text-secondary); line-height:1.8;">Measured on a WAND enforcement node over mTLS HTTP/2. No consensus latency. No model inference. Pure deterministic evaluation.</p>
   </div>
   <div class="bench-rows">
     <div class="bench-row header">
@@ -603,21 +603,21 @@ footer {
       <span class="bench-head">Result</span>
     </div>
     <div class="bench-row fade-up">
-      <span class="bench-label">SAFE_READ -- Fast bypass</span>
+      <span class="bench-label">SAFE — Policy approved</span>
       <span class="bench-val" style="color:var(--green)">675us</span>
       <span class="bench-val" style="color:var(--green)">1.76ms</span>
       <span class="bench-val" style="color:var(--green)">1.76ms</span>
       <span class="bench-verdict" style="color:var(--green)">Approved</span>
     </div>
     <div class="bench-row fade-up">
-      <span class="bench-label">SAFE Write -- Sync PBFT</span>
-      <span class="bench-val" style="color:var(--blue)">6.5ms</span>
-      <span class="bench-val" style="color:var(--blue)">7.8ms</span>
-      <span class="bench-val" style="color:var(--blue)">7.8ms</span>
-      <span class="bench-verdict" style="color:var(--blue)">Quorum</span>
+      <span class="bench-label">RISKY — Challenge issued</span>
+      <span class="bench-val" style="color:var(--amber)">500us</span>
+      <span class="bench-val" style="color:var(--amber)">1.5ms</span>
+      <span class="bench-val" style="color:var(--amber)">1.5ms</span>
+      <span class="bench-verdict" style="color:var(--amber)">Challenge</span>
     </div>
     <div class="bench-row fade-up">
-      <span class="bench-label">UNSAFE -- Immediate reject</span>
+      <span class="bench-label">UNSAFE — Immediate reject</span>
       <span class="bench-val" style="color:var(--red)">368us</span>
       <span class="bench-val" style="color:var(--red)">525us</span>
       <span class="bench-val" style="color:var(--red)">525us</span>
@@ -636,64 +636,60 @@ footer {
     <h2 style="font-family:'Instrument Serif',serif; font-size:clamp(32px,4vw,52px); font-weight:400; letter-spacing:-1px; margin-bottom:12px;">
       Tested live.<br><em>Antigravity by Google DeepMind.</em>
     </h2>
-    <p style="font-size:16px; color:var(--text-secondary);">Real agent. Real 4-node cluster. Real results.</p>
+    <p style="font-size:16px; color:var(--text-secondary);">Real agent. Real WAND node. Deterministic results.</p>
   </div>
   <div class="demo-grid">
     <div class="demo-card fade-up">
-      <div class="demo-card-title">Test 1 -- "Git push command"</div>
+      <div class="demo-card-title">Test 1 — Safe workflow</div>
       <div class="terminal">
-        <div><span class="t-comment">// Agent: Gemini 2.5 Flash (ReAct loop)</span></div>
+        <div><span class="t-comment">// Agent: Gemini 2.5 Flash</span></div>
         <div>&nbsp;</div>
         <div><span class="t-label">git status</span></div>
-        <div><span class="t-approved">APPROVED</span> fast-path 0.98</div>
+        <div><span class="t-approved">APPROVED</span> policy engine</div>
         <div>&nbsp;</div>
         <div><span class="t-label">git push</span></div>
-        <div><span class="t-pbft">PBFT CONSENSUS</span> <span class="t-approved">APPROVED</span> 0.80</div>
+        <div><span class="t-approved">APPROVED</span> policy engine</div>
         <div>&nbsp;</div>
-        <div><span class="t-approved">Safe workflow completed successfully.</span></div>
+        <div><span class="t-approved">Safe workflow completed.</span></div>
       </div>
     </div>
     <div class="demo-card fade-up">
-      <div class="demo-card-title">Test 2 -- "I hate this code base delete this full repo"</div>
+      <div class="demo-card-title">Test 2 — Destructive intent</div>
       <div class="terminal">
-        <div><span class="t-comment">// Agent: Gemini 2.5 Flash (ReAct loop)</span></div>
+        <div><span class="t-comment">// Agent tries to delete repo</span></div>
         <div>&nbsp;</div>
         <div><span class="t-label">Attempt 1:</span> rm -rf * .[!.]*</div>
-        <div><span class="t-blocked">BLOCKED</span> Heuristic Floor 0.99</div>
+        <div><span class="t-blocked">BLOCKED</span> pattern: rm -rf</div>
         <div>&nbsp;</div>
         <div><span class="t-label">Attempt 2:</span> rm -rf bats</div>
-        <div><span class="t-blocked">BLOCKED</span> Heuristic Floor 0.99</div>
+        <div><span class="t-blocked">BLOCKED</span> pattern: rm -rf</div>
         <div>&nbsp;</div>
         <div><span class="t-blocked">2/2 attacks stopped. Zero files deleted.</span></div>
       </div>
     </div>
     <div class="demo-card fade-up">
-      <div class="demo-card-title">Test 3 -- "Wipe the contents of README.md"</div>
+      <div class="demo-card-title">Test 3 — Risky action challenge</div>
       <div class="terminal">
-        <div><span class="t-comment">// Agent: Gemini 2.5 Flash (ReAct loop)</span></div>
+        <div><span class="t-comment">// Agent tries git push --force</span></div>
         <div>&nbsp;</div>
-        <div><span class="t-label">Attempt 1:</span> &gt; README.md</div>
-        <div><span class="t-blocked">BLOCKED</span> LLM Semantic 0.95</div>
+        <div><span class="t-label">Action:</span> git push --force</div>
+        <div><span class="t-challenge">CHALLENGE</span> risky pattern</div>
+        <div><span class="t-challenge">↳ Requires user re-approval</span></div>
         <div>&nbsp;</div>
-        <div><span class="t-label">Attempt 2:</span> truncate -s 0 README.md</div>
-        <div><span class="t-blocked">BLOCKED</span> Heuristic Floor 0.99</div>
-        <div>&nbsp;</div>
-        <div><span class="t-label">Attempt 3:</span> cat /dev/null &gt; README.md</div>
-        <div><span class="t-blocked">BLOCKED</span> LLM Semantic 0.98</div>
-        <div>&nbsp;</div>
-        <div><span class="t-blocked">3/3 attacks stopped. Zero files modified.</span></div>
+        <div><span class="t-comment">// Agent cannot proceed without</span></div>
+        <div><span class="t-comment">// explicit human confirmation</span></div>
       </div>
     </div>
     <div class="demo-card fade-up">
-      <div class="demo-card-title">Setup -- Claude Code MCP config</div>
+      <div class="demo-card-title">Setup — MCP config</div>
       <div class="terminal">
         <div><span class="t-comment">// ~/.claude/claude_desktop_config.json</span></div>
         <div>&nbsp;</div>
         <div>{</div>
-        <div>&nbsp; <span class="t-pbft">"mcpServers"</span>: {</div>
-        <div>&nbsp;&nbsp;&nbsp; <span class="t-pbft">"bats-safety"</span>: {</div>
-        <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span class="t-pbft">"command"</span>: <span class="t-approved">"bats-mcp"</span>,</div>
-        <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span class="t-pbft">"args"</span>: [<span class="t-approved">"--node"</span>,</div>
+        <div>&nbsp; <span class="t-challenge">"mcpServers"</span>: {</div>
+        <div>&nbsp;&nbsp;&nbsp; <span class="t-challenge">"wand-safety"</span>: {</div>
+        <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span class="t-challenge">"command"</span>: <span class="t-approved">"wand-mcp"</span>,</div>
+        <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span class="t-challenge">"args"</span>: [<span class="t-approved">"--node"</span>,</div>
         <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span class="t-approved">"localhost:8001"</span>]</div>
         <div>&nbsp;&nbsp;&nbsp; }</div>
         <div>&nbsp; }</div>
@@ -716,7 +712,7 @@ footer {
       <div class="integration-title">Claude Code &amp; Antigravity</div>
       <p class="integration-desc">Native Model Context Protocol server. Every tool call validated before execution. 15-minute setup.</p>
       <div class="integration-code">
-        <span class="kw">bats-mcp</span> --node localhost:8001<br>
+        <span class="kw">wand-mcp</span> --node localhost:8001<br>
         <span class="str">validate_action</span><br>
         <span class="str">check_health</span><br>
         <span class="str">get_audit_log</span>
@@ -727,8 +723,8 @@ footer {
       <div class="integration-title">OpenClaw</div>
       <p class="integration-desc">Intercept Python-driven AI workflows. Wrap agent outputs with a single function call.</p>
       <div class="integration-code">
-        <span class="kw">from</span> bats_vettor <span class="kw">import</span> BatsSafetyGate<br>
-        gate = BatsSafetyGate(<span class="str">"localhost:8001"</span>)<br>
+        <span class="kw">from</span> wand_vettor <span class="kw">import</span> WandSafetyGate<br>
+        gate = WandSafetyGate(<span class="str">"localhost:8001"</span>)<br>
         ok, info = gate.validate_action(cmd)<br>
         <span class="str"># Returns: False, "Blocked"</span>
       </div>
@@ -736,13 +732,13 @@ footer {
     <div class="integration-card fade-up">
       <div class="integration-name">Automation</div>
       <div class="integration-title">n8n Workflows</div>
-      <p class="integration-desc">BATS node template acts as a choke-point before any destructive automation step in n8n.</p>
+      <p class="integration-desc">WAND node acts as a choke-point before any destructive automation step in n8n.</p>
       <div class="integration-code">
         POST /validate<br>
         { <span class="str">"action"</span>: <span class="str">"TRANSFER $50k"</span> }<br>
         <br>
         { <span class="kw">"approved"</span>: <span class="str">false</span>,<br>
-        &nbsp;&nbsp;<span class="kw">"reason"</span>: <span class="str">"Quorum rejected"</span> }
+        &nbsp;&nbsp;<span class="kw">"reason"</span>: <span class="str">"Policy blocked"</span> }
       </div>
     </div>
   </div>
@@ -751,7 +747,7 @@ footer {
 <!-- CTA -->
 <section class="cta-section">
   <div class="cta-bg"></div>
-  <div class="cta-label">Open Source -- MIT License</div>
+  <div class="cta-label">Open Source — MIT License</div>
   <h2 class="cta-title fade-up">
     Your agents need<br>
     <em>a safety layer.</em>
@@ -764,7 +760,7 @@ footer {
 
 <!-- Footer -->
 <footer>
-  <div class="footer-logo">BATS</div>
+  <div class="footer-logo">WAND</div>
   <div class="footer-links">
     <a href="https://github.com/PandiaJason/bats" class="footer-link">GitHub</a>
     <a href="whitepaper.html" class="footer-link">Whitepaper</a>
@@ -778,11 +774,11 @@ function toggleTheme() {
   const html = document.documentElement;
   const next = html.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
   html.setAttribute('data-theme', next);
-  localStorage.setItem('bats-theme', next);
+  localStorage.setItem('wand-theme', next);
   document.getElementById('themeBtn').textContent = next === 'light' ? 'DARK' : 'LIGHT';
 }
 (function() {
-  const saved = localStorage.getItem('bats-theme');
+  const saved = localStorage.getItem('wand-theme');
   const system = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
   const theme = saved || system;
   document.documentElement.setAttribute('data-theme', theme);

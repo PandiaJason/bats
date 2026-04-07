@@ -22,7 +22,7 @@ func main() {
 	}
 	defer file.Close()
 
-	fmt.Printf("--- BATS AUDIT REPORT: %s ---\n", path)
+	fmt.Printf("--- WAND AUDIT REPORT: %s ---\n", path)
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		line := scanner.Text()

@@ -5,7 +5,7 @@ import ssl
 import time
 import random
 
-class BatsSafetyGate:
+class WandSafetyGate:
     def __init__(self, endpoint="https://localhost:8001/validate"):
         self.endpoint = endpoint
         # [SEC] In a production/enterprise setting, we'd load the CA cert.
@@ -14,7 +14,7 @@ class BatsSafetyGate:
 
     def validate_action(self, action):
         """
-        Vets an AI action through the BATS Byzantine cluster.
+        Vets an AI action through the WAND safety node.
         Returns: (True/False, digest/reason, confidence)
         """
         try:
@@ -45,11 +45,11 @@ class BatsSafetyGate:
                 err_data = json.loads(err_body.decode("utf-8"))
                 return False, err_data.get("reason", f"HTTP {e.code}"), err_data.get("confidence", 0.0)
             except:
-                return False, f"BATS_HTTP_ERROR: {e.code}", 0.0
+                return False, f"WAND_HTTP_ERROR: {e.code}", 0.0
         except urllib.error.URLError as e:
-            return False, f"BATS_UNREACHABLE: {str(e)}", 0.0
+            return False, f"WAND_UNREACHABLE: {str(e)}", 0.0
         except Exception as e:
-            return False, f"BATS_ERROR: {str(e)}", 0.0
+            return False, f"WAND_ERROR: {str(e)}", 0.0
 
     def execute_safely(self, action, execution_fn):
         """
@@ -57,10 +57,10 @@ class BatsSafetyGate:
         """
         approved, info, confidence = self.validate_action(action)
         if approved:
-            print(f"[BATS] [APPROVED] Action Approved. Confidence: {confidence}. Digest: {info}")
+            print(f"[WAND] [APPROVED] Action Approved. Confidence: {confidence}. Digest: {info}")
             out = execution_fn(action)
             return {"status": "APPROVED", "confidence": confidence, "detail": out}
         else:
-            print(f"[BATS] [BLOCKED] ACTION BLOCKED. Confidence: {confidence}. Reason: {info}")
-            return {"error": "BATS_SAFETY_VIOLATION", "confidence": confidence, "details": info}
+            print(f"[WAND] [BLOCKED] ACTION BLOCKED. Confidence: {confidence}. Reason: {info}")
+            return {"error": "WAND_SAFETY_VIOLATION", "confidence": confidence, "details": info}
 

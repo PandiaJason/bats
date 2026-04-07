@@ -8,7 +8,7 @@ pkill -9 -f "main node" || true
 rm -f /tmp/node*.log || true
 sleep 1
 
-echo "Starting BATS Node (Standalone Mode for Mock Agent Evaluation)..."
+echo "Starting WAND Node (Standalone Mode for Mock Agent Evaluation)..."
 # Start Node 1 with 0 peers (F=0). It will be the leader and simulate the test.
 PEERS="NONE" go run cmd/node/main.go node1 8001 > /tmp/node1.log 2>&1 &
 

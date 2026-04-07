@@ -80,7 +80,7 @@ func (c *Consensus) AddPeer(id string, pub []byte) {
 		c.Peers = append(c.Peers, id)
 	}
 	c.RecalculateF()
-	fmt.Printf("[BATS] Node %s: Membership Updated. Total Nodes:%d, F:%d\n", c.ID, len(c.PublicKeys), c.F)
+	fmt.Printf("[WAND] Node %s: Membership Updated. Total Nodes:%d, F:%d\n", c.ID, len(c.PublicKeys), c.F)
 }
 
 // GetPeers returns a copy of the peers slice (thread-safe, acquires lock).
@@ -184,12 +184,12 @@ func (c *Consensus) Handle(msg *types.ConsensusMessage) {
 		msg.Signature = sig
 
 		if !crypto.Verify(pub, data, sig) {
-			fmt.Printf("[BATS] Node %s: SIGNATURE FAILED from %s. Dropping.\n", c.ID, msg.NodeId)
+			fmt.Printf("[WAND] Node %s: SIGNATURE FAILED from %s. Dropping.\n", c.ID, msg.NodeId)
 			c.mu.Unlock()
 			return
 		}
 	} else {
-		fmt.Printf("[BATS] Node %s: UNKNOWN NODE %s. Dropping.\n", c.ID, msg.NodeId)
+		fmt.Printf("[WAND] Node %s: UNKNOWN NODE %s. Dropping.\n", c.ID, msg.NodeId)
 		c.mu.Unlock()
 		return
 	}
@@ -251,7 +251,7 @@ func (c *Consensus) Handle(msg *types.ConsensusMessage) {
 		c.Commit[key][msg.NodeId] = true
 
 		if len(c.Commit[key]) >= 2*c.F+1 {
-			fmt.Printf("[BATS] CONSENSUS REACHED [View:%d]: %s\n", c.View, key[:16]+"...")
+			fmt.Printf("[WAND] CONSENSUS REACHED [View:%d]: %s\n", c.View, key[:16]+"...")
 			c.WAL.Write("COMMITTED:" + key)
 			c.resetTimer()
 
@@ -273,7 +273,7 @@ func (c *Consensus) Handle(msg *types.ConsensusMessage) {
 		c.ViewChangeVotes[targetView][msg.NodeId] = true
 
 		if len(c.ViewChangeVotes[targetView]) >= 2*c.F+1 && targetView > c.View {
-			fmt.Printf("[BATS] VIEW CHANGE to View %d\n", targetView)
+			fmt.Printf("[WAND] VIEW CHANGE to View %d\n", targetView)
 			c.View = targetView
 			c.Prepare = make(map[string]map[string]bool)
 			c.Commit = make(map[string]map[string]bool)
@@ -300,7 +300,7 @@ func (c *Consensus) Monitor() {
 			c.mu.Unlock()
 			c.Heartbeat()
 		} else {
-			fmt.Printf("[BATS] Node %s: Leader timeout. Initiating View Change.\n", c.ID)
+			fmt.Printf("[WAND] Node %s: Leader timeout. Initiating View Change.\n", c.ID)
 			nextView := c.View + 1
 			msg := &types.ConsensusMessage{
 				Type:   types.MessageType_VIEW_CHANGE,

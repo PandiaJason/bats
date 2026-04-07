@@ -90,7 +90,7 @@ func main() {
 	if p := os.Getenv("DASHBOARD_PORT"); p != "" {
 		port = p
 	}
-	fmt.Printf("[BATS-DASHBOARD] Live at http://localhost:%s\n", port)
+	fmt.Printf("[WAND-DASHBOARD] Live at http://localhost:%s\n", port)
 	log.Fatal(http.ListenAndServe(":"+port, mux))
 }
 
@@ -231,7 +231,7 @@ const dashboardHTML = `<!DOCTYPE html>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>BATS Control Plane</title>
+<title>WAND Control Plane</title>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -297,7 +297,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;min-h
 </head>
 <body>
 <div class="header">
-  <h1>BATS Control Plane</h1>
+  <h1>WAND Control Plane</h1>
   <span class="badge">v3.1</span>
   <span class="uptime" id="uptime">--</span>
 </div>
