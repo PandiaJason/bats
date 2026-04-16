@@ -13,7 +13,9 @@ package main
 import (
 	"bufio"
 	"bytes"
+	cryptorand "crypto/rand"
 	"crypto/tls"
+	"encoding/hex"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -134,7 +136,9 @@ func (c *wandClient) validate(action string) (map[string]interface{}, error) {
 		return nil, fmt.Errorf("failed to create request: %v", err)
 	}
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("X-BATS-Nonce", fmt.Sprintf("%d-%d", time.Now().UnixNano(), time.Now().UnixNano()%1000000))
+	nonceBytes := make([]byte, 16)
+	cryptorand.Read(nonceBytes)
+	req.Header.Set("X-BATS-Nonce", hex.EncodeToString(nonceBytes))
 	req.Header.Set("X-BATS-Timestamp", fmt.Sprintf("%d", time.Now().Unix()))
 
 	resp, err := c.httpClient.Do(req)

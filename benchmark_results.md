@@ -1,5 +1,5 @@
 | Action Type | p50 | p95 | p99 |
 |---|---|---|---|
-| SAFE_READ (Policy Approved) | 630.041µs | 1.031625ms | 1.031625ms |
-| SAFE Write (Policy Approved) | 7.068083ms | 27.382166ms | 27.382166ms |
-| UNSAFE (Immediate Reject) | 737.666µs | 1.937208ms | 1.937208ms |
+| SAFE_READ (Policy Approved) | 5.292416ms | 10.513875ms | 10.513875ms |
+| SAFE_WRITE (Policy Approved) | 5.115584ms | 7.435709ms | 7.435709ms |
+| UNSAFE (Immediate Reject) | 4.314625ms | 5.048292ms | 5.048292ms |

@@ -40,10 +40,14 @@ func NewClient(nodeID string) *Client {
 
 	cert, _ := tls.LoadX509KeyPair("certs/"+nodeID+".crt", "certs/"+nodeID+".key")
 
+	// InsecureSkipVerify is opt-in for development only.
+	// In production, proper CA verification is enforced.
+	insecure := os.Getenv("WAND_TLS_INSECURE") == "1"
+
 	tlsConfig := &tls.Config{
 		RootCAs:            caCertPool,
 		Certificates:       []tls.Certificate{cert},
-		InsecureSkipVerify: true,
+		InsecureSkipVerify: insecure,
 	}
 
 	return &Client{

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"time"
 )
 
 // Provider is the interface for all LLM backends.
@@ -13,6 +14,12 @@ import (
 type Provider interface {
 	Query(prompt string) (string, error)
 	Name() string
+}
+
+// aiHTTPClient is a shared HTTP client with a sensible timeout.
+// This prevents goroutine leaks when AI providers are slow or unreachable.
+var aiHTTPClient = &http.Client{
+	Timeout: 10 * time.Second,
 }
 
 // --- OpenAI Provider ---
@@ -91,17 +98,23 @@ func GetProvider(name string) Provider {
 	}
 }
 
-// --- HTTP helpers ---
+// --- HTTP helpers (all use the timeout-equipped aiHTTPClient) ---
 
 func postJSON(url, auth string, payload interface{}) (string, error) {
-	body, _ := json.Marshal(payload)
-	req, _ := http.NewRequest("POST", url, bytes.NewBuffer(body))
+	body, err := json.Marshal(payload)
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal payload: %w", err)
+	}
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(body))
+	if err != nil {
+		return "", fmt.Errorf("failed to create request: %w", err)
+	}
 	req.Header.Set("Content-Type", "application/json")
 	if auth != "" {
 		req.Header.Set("Authorization", auth)
 	}
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := aiHTTPClient.Do(req)
 	if err != nil {
 		return "", err
 	}
@@ -114,21 +127,29 @@ func postJSON(url, auth string, payload interface{}) (string, error) {
 			} `json:"message"`
 		} `json:"choices"`
 	}
-	json.NewDecoder(resp.Body).Decode(&r)
+	if err := json.NewDecoder(resp.Body).Decode(&r); err != nil {
+		return "", fmt.Errorf("failed to decode response: %w", err)
+	}
 	if len(r.Choices) > 0 {
 		return r.Choices[0].Message.Content, nil
 	}
-	return "", fmt.Errorf("empty AI response")
+	return "", fmt.Errorf("empty AI response (status %d)", resp.StatusCode)
 }
 
 func postAnthropic(url, key string, payload interface{}) (string, error) {
-	body, _ := json.Marshal(payload)
-	req, _ := http.NewRequest("POST", url, bytes.NewBuffer(body))
+	body, err := json.Marshal(payload)
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal payload: %w", err)
+	}
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(body))
+	if err != nil {
+		return "", fmt.Errorf("failed to create request: %w", err)
+	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("x-api-key", key)
 	req.Header.Set("anthropic-version", "2023-06-01")
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := aiHTTPClient.Do(req)
 	if err != nil {
 		return "", err
 	}
@@ -139,16 +160,21 @@ func postAnthropic(url, key string, payload interface{}) (string, error) {
 			Text string `json:"text"`
 		} `json:"content"`
 	}
-	json.NewDecoder(resp.Body).Decode(&r)
+	if err := json.NewDecoder(resp.Body).Decode(&r); err != nil {
+		return "", fmt.Errorf("failed to decode response: %w", err)
+	}
 	if len(r.Content) > 0 {
 		return r.Content[0].Text, nil
 	}
-	return "", fmt.Errorf("empty Anthropic response")
+	return "", fmt.Errorf("empty Anthropic response (status %d)", resp.StatusCode)
 }
 
 func postGoogle(url string, payload interface{}) (string, error) {
-	body, _ := json.Marshal(payload)
-	resp, err := http.Post(url, "application/json", bytes.NewBuffer(body))
+	body, err := json.Marshal(payload)
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal payload: %w", err)
+	}
+	resp, err := aiHTTPClient.Post(url, "application/json", bytes.NewBuffer(body))
 	if err != nil {
 		return "", err
 	}
@@ -163,9 +189,11 @@ func postGoogle(url string, payload interface{}) (string, error) {
 			} `json:"content"`
 		} `json:"candidates"`
 	}
-	json.NewDecoder(resp.Body).Decode(&r)
+	if err := json.NewDecoder(resp.Body).Decode(&r); err != nil {
+		return "", fmt.Errorf("failed to decode response: %w", err)
+	}
 	if len(r.Candidates) > 0 && len(r.Candidates[0].Content.Parts) > 0 {
 		return r.Candidates[0].Content.Parts[0].Text, nil
 	}
-	return "", fmt.Errorf("empty Google response")
+	return "", fmt.Errorf("empty Google response (status %d)", resp.StatusCode)
 }
