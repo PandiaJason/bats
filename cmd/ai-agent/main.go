@@ -30,10 +30,10 @@ func main() {
 		return
 	}
 
-	runAIConsensus(config)
+	runAIValidation(config)
 }
 
-func runAIConsensus(config Config) {
+func runAIValidation(config Config) {
 	fmt.Printf("Querying OpenAI [%s]...\n", config.Model)
 
 	url := "https://api.openai.com/v1/chat/completions"

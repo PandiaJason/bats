@@ -37,7 +37,7 @@ class WandSafetyGate:
                 data = json.loads(raw.decode("utf-8"))
                 if data.get("approved"):
                     return True, data.get("digest"), data.get("confidence", 0.0)
-                return False, data.get("reason", "Consensus Rejected"), data.get("confidence", 0.0)
+                return False, data.get("reason", "Policy Rejected"), data.get("confidence", 0.0)
         except urllib.error.HTTPError as e:
             err_body = e.read()
             print(f"HTTP ERROR {e.code}: {err_body}")

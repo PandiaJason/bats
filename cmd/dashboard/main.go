@@ -320,9 +320,9 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;min-h
     </div>
   </div>
 
-  <!-- Consensus Log -->
+  <!-- Validation Log -->
   <div class="card" style="grid-column:1/3">
-    <h2><span class="dot" style="background:var(--green)"></span>Consensus Log (live)</h2>
+    <h2><span class="dot" style="background:var(--green)"></span>Validation Log (live)</h2>
     <div class="log" id="log"></div>
   </div>
 

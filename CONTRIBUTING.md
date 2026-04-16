@@ -22,7 +22,7 @@ To mitigate payload mutation vulnerabilities, WAND enforces strict memory hygien
 
 ### 3. Formal Verification
 Any logic affecting the **policy engine or WAL must be accompanied by a **Proof of Safety**.
-- Contributors must document the mathematical invariant that their change preserves (e.g., $Quorum \cap Quorum \neq \emptyset$).
+- Contributors must document the safety invariant that their change preserves$).
 - Changes to the 3-phase commit protocol require a formal trace analysis showing that safety holds even during a View Change.
 
 ---
