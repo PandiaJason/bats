@@ -569,7 +569,7 @@ footer {
     <div class="how-step" data-num="2">
       <span class="step-tag">Evaluate</span>
       <div class="step-title">Policy Engine</div>
-      <p class="step-desc">Deterministic pattern matching against 100+ dangerous patterns. BLOCK, CHALLENGE, or ALLOW. No AI. No confidence scores. No ambiguity.</p>
+      <p class="step-desc">Deterministic pattern matching against 183 pre-compiled regex rules. BLOCK, CHALLENGE, or ALLOW. No AI. No confidence scores. No ambiguity.</p>
       <div class="step-time red">&lt;500us</div>
     </div>
     <div class="how-step" data-num="3">
@@ -603,29 +603,29 @@ footer {
       <span class="bench-head">Result</span>
     </div>
     <div class="bench-row fade-up">
-      <span class="bench-label">SAFE — Policy approved</span>
-      <span class="bench-val" style="color:var(--green)">675us</span>
-      <span class="bench-val" style="color:var(--green)">1.76ms</span>
-      <span class="bench-val" style="color:var(--green)">1.76ms</span>
-      <span class="bench-verdict" style="color:var(--green)">Approved</span>
+      <span class="bench-label">SAFE_READ -- Policy approved</span>
+      <span class="bench-val" style="color:var(--green)">5.0ms</span>
+      <span class="bench-val" style="color:var(--green)">7.8ms</span>
+      <span class="bench-val" style="color:var(--green)">7.8ms</span>
+      <span class="bench-verdict" style="color:var(--green)">Allow</span>
     </div>
     <div class="bench-row fade-up">
-      <span class="bench-label">RISKY — Challenge issued</span>
-      <span class="bench-val" style="color:var(--amber)">500us</span>
-      <span class="bench-val" style="color:var(--amber)">1.5ms</span>
-      <span class="bench-val" style="color:var(--amber)">1.5ms</span>
-      <span class="bench-verdict" style="color:var(--amber)">Challenge</span>
+      <span class="bench-label">SAFE_WRITE -- Policy approved</span>
+      <span class="bench-val" style="color:var(--green)">6.2ms</span>
+      <span class="bench-val" style="color:var(--green)">8.0ms</span>
+      <span class="bench-val" style="color:var(--green)">8.0ms</span>
+      <span class="bench-verdict" style="color:var(--green)">Allow</span>
     </div>
     <div class="bench-row fade-up">
-      <span class="bench-label">UNSAFE — Immediate reject</span>
-      <span class="bench-val" style="color:var(--red)">368us</span>
-      <span class="bench-val" style="color:var(--red)">525us</span>
-      <span class="bench-val" style="color:var(--red)">525us</span>
+      <span class="bench-label">UNSAFE -- Immediate reject</span>
+      <span class="bench-val" style="color:var(--red)">4.3ms</span>
+      <span class="bench-val" style="color:var(--red)">5.0ms</span>
+      <span class="bench-val" style="color:var(--red)">5.0ms</span>
       <span class="bench-verdict" style="color:var(--red)">Blocked</span>
     </div>
   </div>
   <p style="margin-top:28px; font-family:'DM Mono',monospace; font-size:13px; color:var(--dim);">
-    Run it yourself: go test -v -timeout 60s ./tests/ -run TestBenchmarkLatency
+    Run it yourself: WAND_TLS_INSECURE=1 go test -v -timeout 60s ./tests/ -run TestBenchmarkLatency (includes full mTLS round-trip)
   </p>
 </section>
 

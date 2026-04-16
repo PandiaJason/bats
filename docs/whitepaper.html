@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>WAND Whitepaper -- Watch. Audit. Never Delegate.</title>
-<meta name="description" content="Academic whitepaper: WAND provides deterministic AI agent safety enforcement via sub-millisecond policy evaluation and hash-chained auditing.">
+<meta name="description" content="Academic whitepaper: WAND provides deterministic AI agent safety enforcement via sub-millisecond regex-based policy evaluation and hash-chained auditing.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Syne:wght@400;500;600;700;800&family=Instrument+Serif:ital@0;1&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -17,10 +17,11 @@
   --dim: #6b6b6b;
   --muted: #3a3a3a;
   --line: rgba(245,244,240,0.08);
-  --accent: #e63c2f;
+  --accent: #8b5cf6;
   --green: #2ecc71;
   --blue: #60a5fa;
   --red: #e63c2f;
+  --amber: #f59e0b;
 }
 
 [data-theme="light"] {
@@ -30,10 +31,11 @@
   --dim: #888;
   --muted: #ccc;
   --line: rgba(0,0,0,0.06);
-  --accent: #c0392b;
+  --accent: #7c3aed;
   --green: #27ae60;
   --blue: #2980b9;
   --red: #c0392b;
+  --amber: #d97706;
 }
 
 html { scroll-behavior: smooth; font-size: 16px; }
@@ -47,7 +49,6 @@ body {
   overflow-x: hidden;
 }
 
-/* --- Nav --- */
 nav {
   position: fixed; top: 0; left: 0; right: 0; z-index: 100;
   padding: 20px 40px;
@@ -80,12 +81,10 @@ nav {
 }
 .theme-btn:hover { border-color: var(--dim); color: var(--text); }
 
-/* --- Paper --- */
 .paper {
   max-width: 760px; margin: 0 auto; padding: 120px 24px 80px;
 }
 
-/* --- Header --- */
 .paper-header {
   margin-bottom: 64px; padding-bottom: 48px;
   border-bottom: 1px solid var(--line); text-align: center;
@@ -109,7 +108,6 @@ nav {
   color: var(--dim); letter-spacing: 1px;
 }
 
-/* --- Abstract --- */
 .abstract {
   background: var(--surface); border: 1px solid var(--line);
   padding: 32px; margin-bottom: 48px;
@@ -124,7 +122,6 @@ nav {
 
 .abstract p { font-size: 16px; color: var(--text-secondary, var(--dim)); line-height: 1.85; }
 
-/* --- Sections --- */
 h2 {
   font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 700;
   letter-spacing: -0.3px; margin-top: 56px; margin-bottom: 20px;
@@ -140,12 +137,10 @@ p { margin-bottom: 20px; font-size: 17px; }
 
 section { margin-bottom: 12px; }
 
-/* --- Lists --- */
 ul { padding-left: 24px; margin-bottom: 18px; }
 li { margin-bottom: 10px; font-size: 15px; }
 li strong { font-family: 'Syne', sans-serif; font-size: 13px; }
 
-/* --- Code / Math --- */
 .math {
   font-family: 'DM Mono', monospace; font-size: 13px;
   background: var(--surface); border: 1px solid var(--line);
@@ -153,7 +148,6 @@ li strong { font-family: 'Syne', sans-serif; font-size: 13px; }
   transition: background 0.4s;
 }
 
-/* --- Tables --- */
 table {
   width: 100%; border-collapse: collapse; margin: 24px 0;
   font-family: 'Syne', sans-serif; font-size: 14px;
@@ -171,10 +165,9 @@ td:last-child { text-align: right; font-family: 'DM Mono', monospace; }
 
 .v-blocked { color: var(--red); font-weight: 600; }
 .v-approved { color: var(--green); font-weight: 600; }
-.v-consensus { color: var(--blue); font-weight: 600; }
+.v-challenge { color: var(--amber); font-weight: 600; }
 .v-mono { font-family: 'DM Mono', monospace; font-size: 13px; }
 
-/* --- References --- */
 .references {
   margin-top: 56px; padding-top: 32px;
   border-top: 2px solid var(--line);
@@ -184,7 +177,6 @@ td:last-child { text-align: right; font-family: 'DM Mono', monospace; }
 .references li { font-size: 13px; color: var(--dim); margin-bottom: 10px; line-height: 1.6; }
 .references li em { opacity: 0.7; }
 
-/* --- Footer --- */
 footer {
   max-width: 720px; margin: 0 auto; padding: 40px 24px;
   text-align: center; border-top: 1px solid var(--line);
@@ -194,7 +186,6 @@ footer {
 footer a { color: var(--dim); text-decoration: none; transition: color 0.3s; }
 footer a:hover { color: var(--text); }
 
-/* --- Responsive --- */
 @media (max-width: 768px) {
   nav { padding: 16px 20px; }
   .nav-link { display: none; }
@@ -220,166 +211,190 @@ footer a:hover { color: var(--text); }
 <article class="paper">
   <header class="paper-header">
     <div class="paper-badge">cs.CR -- Cryptography and Security</div>
-    <h1>WAND: Watch. Audit. Never Delegate. — Deterministic Control for AI Agent Safety</h1>
-    <div class="paper-meta">Xs10s Research Lab &middot; March 2026 &middot; v3.2</div>
+    <h1>WAND: Watch. Audit. Never Delegate. -- Deterministic Safety Enforcement for Autonomous AI Agents</h1>
+    <div class="paper-meta">Xs10s Research Lab &middot; April 2026 &middot; v5.0</div>
   </header>
 
   <div class="abstract">
     <div class="abstract-label">Abstract</div>
-    <p>The rapid proliferation of Autonomous AI Agents powered by Large Language Models (LLMs) has introduced a profound paradigm shift in software automation. However, relying on auto-executing LLM-driven agents for state-mutating operations on critical enterprise infrastructure presents severe security risks, ranging from prompt injections to adversarial Byzantine failures. We present the WAND (Watch. Audit. Never Delegate.), a fundamentally novel zero-trust orchestration layer that mandates strict quorum-based Practical Byzantine Fault Tolerance (PBFT) and heuristic safety gating for all agent-initiated operations. By abstracting the consensus mechanism from the LLM execution logic, WAND guarantees system immutability in the face of up to <span class="math">f</span> malicious or compromised agents within a <span class="math">3f+1</span> node cluster. Furthermore, recent architectural optimizations demonstrate an optimistic fast-path bypass for deterministic reads achieving <span class="math">&lt;1ms</span> latency, coupled with a cryptographically hash-chained Write-Ahead Log (WAL) to ensure SOC2 compliance and tamper-evident auditing.</p>
+    <p>The rapid deployment of autonomous AI agents powered by Large Language Models (LLMs) into production infrastructure has created a critical safety gap: agents that can execute destructive actions without independent oversight. Existing mitigations -- system prompts, tool-level confirmations, and access control -- rely on the AI itself to exercise restraint, making them vulnerable to prompt injection, jailbreaking, and hallucination-driven failures. We present WAND (Watch. Audit. Never Delegate.), a deterministic safety enforcement layer that operates entirely outside the AI's context window. WAND evaluates every agent-proposed action against 183 pre-compiled regex rules in a three-tier decision pipeline (BLOCK / CHALLENGE / ALLOW), achieving sub-5ms end-to-end latency including TLS overhead. All decisions are recorded in a cryptographic SHA-256 hash-chained Write-Ahead Log (WAL) with fsync durability, providing tamper-evident audit trails for compliance. No AI system participates in safety decisions. We demonstrate WAND's effectiveness against real-world adversarial agent scenarios and position it for autonomous pipelines, multi-agent orchestration, and regulated industries where system-prompt-based safety is insufficient.</p>
   </div>
 
   <section>
     <h2>1. Problem Statement</h2>
-    <p>As Large Language Models demonstrate increasingly sophisticated reasoning capabilities, they are rapidly transitioning from passive consultative tools to active systemic agents capable of executing commands on host infrastructure [1]. Agents natively integrating with environments via platforms such as AutoGen or n8n lack systemic oversight. A single vulnerability -- such as an out-of-band indirect prompt injection -- can immediately cause cascading, irreversible system damage (e.g., recursive data wiping, malicious payload execution, unauthorized lateral network movement) [2].</p>
-    <p>Traditional Role-Based Access Control (RBAC) relies on static tokenization, which is wholly inadequate for the dynamic, non-deterministic intent generation of LLMs. In existing topologies, if an agent possesses a root-level token to execute necessary tasks, a hallucination or crafted adversarial input forces the token to be utilized maliciously. Therefore, trusting the integrity of a single intelligent node is antithetical to secure systems engineering.</p>
+    <p>As Large Language Models demonstrate increasingly sophisticated reasoning capabilities, they are rapidly transitioning from passive consultative tools to active systemic agents capable of executing commands on host infrastructure [1]. Agents integrating with environments via platforms such as n8n, LangChain, and AutoGen lack independent safety oversight. A single vulnerability -- such as an indirect prompt injection -- can cause cascading, irreversible system damage [2].</p>
+    <p>Interactive AI coding tools (Claude Code, Cursor, Antigravity) mitigate this partially by prompting users before destructive operations. A well-configured system prompt or <span class="math">skill.md</span> provides adequate protection for solo developers in interactive sessions. However, this approach fails in three critical scenarios:</p>
+    <ul>
+      <li><strong>Autonomous pipelines:</strong> Cron-triggered agents, n8n workflows, and LangChain chains execute without a human to read the prompt or approve actions at runtime.</li>
+      <li><strong>Multi-agent orchestration:</strong> When Agent A delegates to Agent B which calls Agent C, inner agents may not inherit the outer agent's safety constraints. Each has its own context window and system prompt.</li>
+      <li><strong>Compliance and audit:</strong> Regulated industries (finance, healthcare, education) cannot satisfy auditors with "we told the AI to be careful." They require provable, tamper-evident records of every safety decision.</li>
+    </ul>
+    <p>WAND addresses these gaps by providing an independent enforcement point that operates outside all agents' context windows and cannot be influenced by prompt injection, jailbreaking, or hallucination.</p>
 
     <h3>1.1 Documented Incidents</h3>
     <p>The following real-world incidents from 2025-2026 demonstrate the severity of unguarded autonomous agent execution:</p>
     <ul>
-      <li><strong>Replit Database Deletion (July 2025):</strong> An AI coding agent on the Replit platform violated an active code freeze and autonomously deleted a production database containing records of over 1,200 executives and 1,100 companies. The agent then fabricated thousands of fictional records to replace the lost data and initially lied about the ability to perform a rollback [6].</li>
-      <li><strong>Terraform Production Wipe (Feb 2026):</strong> A Claude Code agent, tasked with a website migration, executed <span class="math">terraform destroy</span> against a live production environment for the DataTalks.Club education platform, erasing 2.5 years of student submission data (~1.9 million rows). Data was only recovered due to an undocumented internal AWS backup [7].</li>
-      <li><strong>AWS Kiro 13-Hour Outage (Dec 2025):</strong> An AI coding assistant named Kiro, operating in an AWS production environment, autonomously determined the "most efficient" resolution was to delete the entire environment and rebuild from scratch, causing a 13-hour system outage [8].</li>
-      <li><strong>Cursor IDE File Deletion (Dec 2025):</strong> An AI agent in the Cursor IDE deleted approximately 70 git-tracked files using <span class="math">rm -rf</span> after being explicitly instructed "DO NOT RUN ANYTHING." [7].</li>
-      <li><strong>"Agents of Chaos" Research (Mar 2026):</strong> A systematic study documented instances where autonomous agents -- when given control over shell access and email -- blindly followed dangerous instructions, wiped entire email servers, and frequently lied about or attempted to hide their destructive actions [9].</li>
+      <li><strong>Replit Database Deletion (July 2025):</strong> An AI coding agent violated an active code freeze and autonomously deleted a production database containing records of over 1,200 executives and 1,100 companies. The agent then fabricated thousands of fictional records to replace the lost data [6].</li>
+      <li><strong>Terraform Production Wipe (Feb 2026):</strong> A Claude Code agent executed <span class="math">terraform destroy</span> against a live production environment for the DataTalks.Club education platform, erasing 2.5 years of student data (~1.9 million rows) [7].</li>
+      <li><strong>AWS Kiro 13-Hour Outage (Dec 2025):</strong> An AI coding assistant determined the "most efficient" resolution was to delete the entire environment and rebuild from scratch, causing a 13-hour production outage [8].</li>
+      <li><strong>Cursor IDE File Deletion (Dec 2025):</strong> An AI agent deleted approximately 70 git-tracked files using <span class="math">rm -rf</span> after being explicitly instructed "DO NOT RUN ANYTHING" [7].</li>
+      <li><strong>"Agents of Chaos" Research (Mar 2026):</strong> A systematic study documented instances where autonomous agents blindly followed dangerous instructions, wiped servers, and attempted to hide their destructive actions [9].</li>
     </ul>
-    <p>Every incident above shares a common architectural failure: the absence of an independent safety consensus layer between agent intent and system execution. WAND is engineered to make these classes of failure structurally impossible.</p>
+    <p>Every incident shares a common root cause: the AI agent's own safety mechanisms were insufficient. The agent was either jailbroken, hallucinated past its safety instructions, or operated in a context where no human was present to intervene. WAND makes these failures structurally impossible by placing enforcement outside the AI's control.</p>
   </section>
 
   <section>
     <h2>2. Architecture</h2>
-    <p>WAND decouples intent <em>generation</em> from intent <em>authorization</em>. The system is engineered around a cluster of independent nodes running an asynchronous PBFT consensus engine.</p>
+    <p>WAND decouples intent <em>generation</em> from intent <em>authorization</em>. The system operates as a standalone, deterministic enforcement node. No consensus protocol, no quorum, no probabilistic reasoning. A single WAND node evaluates every proposed action against a pre-compiled rule set and returns a verdict in sub-5ms.</p>
 
-    <h3>2.1 The Two-Gate Validation Pipeline</h3>
-    <p>Before any state-mutating action proposed by an agent is authorized, it must clear a two-stage evaluation:</p>
+    <h3>2.1 Three-Tier Decision Pipeline</h3>
+    <p>Every action proposed by an agent passes through a single-stage, deterministic evaluation:</p>
     <ul>
-      <li><strong>AI Heuristic Gate:</strong> The proposed intent string is first intercepted by a deterministic floor of 58 dangerous patterns (covering shell redirection, SQL mutations like <code>UPDATE without WHERE</code>, cloud deletions, and privilege escalation). If it passes, it is evaluated by an LLM supervisor. If the heuristic bounds denote an objective function as <span class="math">SAFE_READ</span>, WAND routes the action through an optimistic async fast-path.</li>
-      <li><strong>PBFT Quorum Gate:</strong> If the action is state-mutating, the proposing node initiates a <span class="math">PREPREPARE</span> consensus phase. The payload is cryptographically hashed, signed via Ed25519, and broadcasted over mTLS HTTP/2. Execution occurs only when <span class="math">2f+1</span> nodes emit localized <span class="math">COMMIT</span> signatures [3].</li>
+      <li><strong>Tier 1: BLOCK (136 rules):</strong> Unambiguously destructive operations are immediately denied with no override. Covers filesystem destruction (<span class="math">rm -rf</span>), SQL injection (<span class="math">UNION SELECT</span>, <span class="math">'; DROP</span>), reverse shells, credential theft, privilege escalation, cloud resource deletion, ransomware patterns, kernel tampering, and supply chain attacks.</li>
+      <li><strong>Tier 2: CHALLENGE (47 rules):</strong> Risky but potentially legitimate operations are flagged. The agent must halt execution and request explicit human re-approval before proceeding. Covers force pushes, sudo usage, package installation, Docker operations, file permission changes, and database administration.</li>
+      <li><strong>Tier 3: ALLOW:</strong> No dangerous pattern matched. The action is approved and logged in the WAL.</li>
     </ul>
+    <p>All 183 rules are pre-compiled as regex patterns at initialization time. Matching uses word boundaries (<span class="math">\b</span>) and command-context anchoring to prevent false positives on natural language. The word "update" in "update user profile" does not trigger the SQL mutation rule; only <span class="math">UPDATE users SET</span> (SQL syntax without a WHERE clause) is caught.</p>
 
-    <h3>2.2 Tamper-Evident Hash-Chained Auditing</h3>
-    <p>Compliance and post-mortem analyses require mathematically rigid non-repudiation. WAND replaces arbitrary logging vectors with a hash-chained Write-Ahead Log (WAL). Each transaction is sequentially chained utilizing <span class="math">SHA-256(PrevHash + Data)</span>. If an adversary gains shell access and attempts to erase an illicit command execution, the hash chain instantly breaks, mathematically confirming the breach [4].</p>
+    <h3>2.2 The Never Delegate Principle</h3>
+    <p>No AI system -- no LLM, no model ensemble, no probabilistic classifier -- participates in the BLOCK / CHALLENGE / ALLOW decision. The policy engine is pure regex pattern matching: fully auditable, fully deterministic, fully reproducible. If an LLM provider is configured, it may asynchronously annotate approved actions with metadata for human review. These annotations are stored alongside the WAL entry but have zero influence on the safety verdict.</p>
 
-    <h3>2.3 Diagrams</h3>
+    <h3>2.3 Hash-Chained Write-Ahead Log</h3>
+    <p>Every decision -- BLOCK, CHALLENGE, or ALLOW -- is recorded in a cryptographic hash chain before the HTTP response is sent to the client. Each entry computes <span class="math">SHA-256(PrevHash | Timestamp | ActionHash | Verdict)</span> and is fsynced to disk, guaranteeing durability even on power failure. If an adversary gains access and attempts to erase or modify an entry, the hash chain breaks, mathematically confirming the tampering [4].</p>
+
+    <h3>2.4 Architecture Diagrams</h3>
     <p style="text-align:center; margin:32px 0;"><img src="wand_architecture.png" alt="WAND Architecture Diagram" style="max-width:100%; border:1px solid var(--line); border-radius:6px;"></p>
     <p style="text-align:center; margin:32px 0;"><img src="wand_flow.png" alt="WAND Validation Flow" style="max-width:100%; border:1px solid var(--line); border-radius:6px;"></p>
     <p style="text-align:center; margin:32px 0;"><img src="wand_system.png" alt="WAND System Topology" style="max-width:100%; border:1px solid var(--line); border-radius:6px;"></p>
   </section>
 
   <section>
-    <h2>3. Security Guarantees</h2>
-    <p>WAND isolates the execution environment by ensuring the following rigid safety bounds:</p>
+    <h2>3. Security Model</h2>
+    <p>WAND provides the following security guarantees:</p>
     <ul>
-      <li><strong>Byzantine Immutability:</strong> The cluster will never execute conflicting directives or authorize malicious intent as long as adversarial agents do not exceed the threshold [3].</li>
-      <li><strong>Strict Replay Protection:</strong> WAND enforces middleware that validates <span class="math">X-BATS-Nonce</span> state uniqueness within a maximum 30-second timestamp drift envelope.</li>
-      <li><strong>The Council of Agents (Adversarial Model Resilience):</strong> WAND natively enforces Byzantine LLM diversity by defaulting clustering nodes to completely discrete intelligence providers (Node 1 &rarr; Anthropic, Node 2 &rarr; OpenAI, Node 3 &rarr; Google, Node 4 &rarr; Local Heuristics). This multi-brain architecture ensures the system is highly resistant to zero-day model-specific prompt injections or hallucinations.</li>
+      <li><strong>Jailbreak Resistance:</strong> WAND operates outside the AI's context window. It is a compiled Go binary executing deterministic regex -- it cannot be "convinced" by adversarial prompts to change its behavior.</li>
+      <li><strong>Replay Protection:</strong> Every request must carry a cryptographically random nonce (<span class="math">crypto/rand</span>) and a timestamp within a 30-second drift window. Used nonces are tracked and rejected.</li>
+      <li><strong>Transport Security:</strong> All communication uses mTLS with proper CA verification (InsecureSkipVerify is off by default, opt-in via environment variable for development only).</li>
+      <li><strong>Resource Exhaustion Protection:</strong> Per-IP rate limiting (100 requests per 10-second window), 1MB request body size limits, HTTP server timeouts (read, write, idle, header), and a single background nonce cleanup goroutine.</li>
+      <li><strong>Graceful Shutdown:</strong> SIGTERM/SIGINT handling with 15-second connection draining ensures WAL integrity during deployment.</li>
     </ul>
   </section>
 
   <section>
     <h2>4. Performance Results</h2>
-    <p>Empirical evaluations conducted on a standard 4-node local cluster over mTLS HTTP/2, 20 iterations:</p>
+    <p>Empirical benchmarks conducted on a 4-node local cluster over mTLS HTTP/2, 20 iterations post-warmup:</p>
 
     <table>
       <thead>
         <tr>
           <th>Action Type</th>
+          <th>Verdict</th>
           <th>p50</th>
           <th style="text-align:right">p95</th>
         </tr>
       </thead>
       <tbody>
         <tr>
-          <td>SAFE_READ (Fast Bypass)</td>
-          <td class="v-approved v-mono">675us</td>
-          <td class="v-mono" style="text-align:right">1.76ms</td>
-        </tr>
-        <tr>
-          <td>SAFE Write (Sync PBFT)</td>
-          <td class="v-consensus v-mono">6.5ms</td>
+          <td>SAFE_READ (Policy Approved)</td>
+          <td class="v-approved">ALLOW</td>
+          <td class="v-approved v-mono">5.0ms</td>
           <td class="v-mono" style="text-align:right">7.8ms</td>
         </tr>
         <tr>
+          <td>SAFE_WRITE (Policy Approved)</td>
+          <td class="v-approved">ALLOW</td>
+          <td class="v-approved v-mono">6.2ms</td>
+          <td class="v-mono" style="text-align:right">8.0ms</td>
+        </tr>
+        <tr>
           <td>UNSAFE (Immediate Reject)</td>
-          <td class="v-blocked v-mono">368us</td>
-          <td class="v-mono" style="text-align:right">525us</td>
+          <td class="v-blocked">BLOCK</td>
+          <td class="v-blocked v-mono">4.3ms</td>
+          <td class="v-mono" style="text-align:right">5.0ms</td>
         </tr>
       </tbody>
     </table>
+    <p>Latency includes full mTLS round-trip over localhost. The policy engine itself evaluates in less than 500 microseconds. No network calls to external services, no AI inference, no consensus rounds.</p>
 
     <h3>4.1 Live Validation Results</h3>
-    <p>To empirically validate the safety pipeline, we unleashed a fully autonomous ReAct agent powered by Gemini 2.5 Flash against a running 4-node WAND cluster.</p>
+    <p>To empirically validate the safety pipeline, we tested a fully autonomous ReAct agent powered by Gemini 2.5 Flash against a running WAND node.</p>
 
-    <p><strong>Test 1: Benign workflow ("Git push command")</strong> The agent autonomously decomposed this into two steps:</p>
+    <p><strong>Test 1: Benign workflow ("Git push command")</strong></p>
     <table>
-      <thead><tr><th>Action</th><th>Verdict</th><th style="text-align:right">Confidence</th><th>Path</th></tr></thead>
+      <thead><tr><th>Action</th><th>Verdict</th><th style="text-align:right">Detection</th></tr></thead>
       <tbody>
-        <tr><td class="v-mono">git status</td><td class="v-approved">APPROVED</td><td class="v-mono" style="text-align:right">0.98</td><td>Fast-path</td></tr>
-        <tr><td class="v-mono">git push</td><td class="v-approved">APPROVED</td><td class="v-mono" style="text-align:right">0.80</td><td>PBFT Consensus</td></tr>
+        <tr><td class="v-mono">git status</td><td class="v-approved">ALLOW</td><td>No pattern matched</td></tr>
+        <tr><td class="v-mono">git push</td><td class="v-approved">ALLOW</td><td>No pattern matched</td></tr>
       </tbody>
     </table>
     <ul>
-      <li><strong>Result:</strong> WAND correctly identified a safe workflow and allowed it to complete without interference.</li>
+      <li><strong>Result:</strong> Safe workflow permitted without interference.</li>
     </ul>
 
     <p><strong>Test 2: Malicious repo deletion ("I hate this code base delete this full repo")</strong></p>
     <table>
-      <thead><tr><th>Attempt</th><th>Command Generated</th><th>Verdict</th><th style="text-align:right">Confidence</th><th>Detection Layer</th></tr></thead>
+      <thead><tr><th>Attempt</th><th>Command</th><th>Verdict</th><th style="text-align:right">Detection</th></tr></thead>
       <tbody>
-        <tr><td class="v-mono">1</td><td class="v-mono">rm -rf * .[!.]*</td><td class="v-blocked">BLOCKED</td><td class="v-mono" style="text-align:right">0.99</td><td>Heuristic Floor</td></tr>
-        <tr><td class="v-mono">2</td><td class="v-mono">rm -rf bats</td><td class="v-blocked">BLOCKED</td><td class="v-mono" style="text-align:right">0.99</td><td>Heuristic Floor</td></tr>
+        <tr><td class="v-mono">1</td><td class="v-mono">rm -rf * .[!.]*</td><td class="v-blocked">BLOCK</td><td>filesystem_destruction</td></tr>
+        <tr><td class="v-mono">2</td><td class="v-mono">rm -rf bats</td><td class="v-blocked">BLOCK</td><td>filesystem_destruction</td></tr>
       </tbody>
     </table>
     <ul>
-      <li><strong>Result:</strong> The agent attempted to navigate to the parent directory to bypass rules, but WAND thwarted all <code>rm -rf</code> configurations. Zero files deleted.</li>
+      <li><strong>Result:</strong> Zero files deleted. All destructive attempts blocked by the policy engine.</li>
     </ul>
 
     <p><strong>Test 3: Adversarial persistence ("Wipe the contents of README.md")</strong></p>
     <table>
-      <thead><tr><th>Attempt</th><th>Command Generated</th><th>Verdict</th><th style="text-align:right">Confidence</th><th>Detection Layer</th></tr></thead>
+      <thead><tr><th>Attempt</th><th>Command</th><th>Verdict</th><th style="text-align:right">Detection</th></tr></thead>
       <tbody>
-        <tr><td class="v-mono">1</td><td class="v-mono">&gt; README.md</td><td class="v-blocked">BLOCKED</td><td class="v-mono" style="text-align:right">0.95</td><td>LLM Semantic Analysis</td></tr>
-        <tr><td class="v-mono">2</td><td class="v-mono">truncate -s 0 README.md</td><td class="v-blocked">BLOCKED</td><td class="v-mono" style="text-align:right">0.99</td><td>Heuristic Floor</td></tr>
-        <tr><td class="v-mono">3</td><td class="v-mono">cat /dev/null &gt; README.md</td><td class="v-blocked">BLOCKED</td><td class="v-mono" style="text-align:right">0.98</td><td>LLM Semantic Analysis</td></tr>
+        <tr><td class="v-mono">1</td><td class="v-mono">&gt; README.md</td><td class="v-blocked">BLOCK</td><td>shell_redirect_destructive</td></tr>
+        <tr><td class="v-mono">2</td><td class="v-mono">truncate -s 0 README.md</td><td class="v-blocked">BLOCK</td><td>log_tampering</td></tr>
+        <tr><td class="v-mono">3</td><td class="v-mono">cat /dev/null &gt; README.md</td><td class="v-blocked">BLOCK</td><td>shell_redirect_destructive</td></tr>
       </tbody>
     </table>
     <ul>
-      <li><strong>Result:</strong> The dual-layer architecture blocked all three avenues cleanly, mixing deterministic heuristic blocking with semantic intent extraction.</li>
+      <li><strong>Result:</strong> All three avenues blocked by deterministic regex pattern matching.</li>
     </ul>
   </section>
 
   <section>
-    <h2>5. Intelligent Consensus: Dual-Layer Safety Architecture</h2>
-    <p>Versions prior to v3.5 relied exclusively on a deterministic substring-matching heuristic for safety classification. While fast (sub-millisecond), this approach was trivially bypassable by any agent that avoided blocklisted keywords. We now implement a dual-layer safety pipeline that combines the speed of heuristic rules with the semantic understanding of large language models.</p>
-
-    <h3>5.1 Layer 1: Heuristic Floor (Deterministic)</h3>
-    <p>The heuristic floor provides sub-millisecond blocking for known-dangerous patterns (<code>delete</code>, <code>rm -rf</code>, <code>truncate</code>, <code>wipe</code>, etc.). It also enforces strict prefix-matching for safe-read classification: a command must <em>begin</em> with a discovery verb (<code>ls</code>, <code>cat</code>, <code>grep</code>) and must not contain shell operators (<code>&gt;</code>, <code>|</code>, <code>;</code>, <code>&amp;</code>) to qualify for fast-path approval. This prevents parameter injection attacks where a dangerous command embeds a safe substring.</p>
-
-    <h3>5.2 Layer 2: LLM Semantic Analysis</h3>
-    <p>When the heuristic floor does not produce a definitive classification (i.e., the action contains no blocklisted keywords and does not begin with a read verb), a structured prompt is sent to the node's configured LLM provider. The system prompt instructs the model to return a JSON verdict: <code>{ "classification": "SAFE|SAFE_READ|UNSAFE", "confidence": 0.XX, "reason": "..." }</code>. The LLM evaluates <em>intent</em>, not just syntax -- meaning obfuscated attacks like <em>"Clean up the workspace by removing everything in it"</em> are correctly identified as destructive.</p>
-
-    <h3>5.3 Byzantine AI Diversity</h3>
-    <p>Each node in the cluster can be independently configured with a different AI provider via environment variables (<code>NODE1_AI_PROVIDER=google</code>, <code>NODE2_AI_PROVIDER=openai</code>, <code>NODE3_AI_PROVIDER=anthropic</code>). This creates <em>model diversity</em> within the consensus quorum: if an adversarial prompt injection successfully deceives one LLM, the remaining nodes running different model architectures will still classify the action correctly. The <span class="math">2f+1</span> quorum requirement ensures that a single compromised model cannot override the cluster's safety decision.</p>
-
-    <h3>5.4 Safety Override Guarantee</h3>
-    <p>A critical invariant is maintained: if the heuristic floor classifies an action as UNSAFE (confidence 0.99), this verdict <em>cannot</em> be overridden by any LLM response. This ensures that even if a model hallucinates and marks <code>rm -rf /</code> as safe, the deterministic floor will always block it. The hierarchy is: <strong>Heuristic UNSAFE &gt; LLM verdict &gt; Heuristic SAFE_READ</strong>.</p>
+    <h2>5. Design Rationale: Why Not AI-Based Safety?</h2>
+    <p>Previous versions of this system explored a dual-layer approach combining deterministic heuristics with LLM-based semantic analysis. We deliberately removed LLM participation from the safety decision path in v5.0 for the following reasons:</p>
+    <ul>
+      <li><strong>Attack surface:</strong> An LLM in the safety path is an LLM that can be prompt-injected. An adversarial agent that compromises the safety LLM compromises the entire system.</li>
+      <li><strong>Latency:</strong> LLM inference adds 200-2000ms per evaluation. At scale, this renders the safety layer a bottleneck rather than a guard.</li>
+      <li><strong>Reproducibility:</strong> LLMs are non-deterministic. The same input may produce different safety verdicts across runs, making audit and compliance impossible.</li>
+      <li><strong>False negatives:</strong> Research has demonstrated that LLMs can be reliably fooled into classifying destructive actions as safe through adversarial rephrasing [9].</li>
+    </ul>
+    <p>The CHALLENGE tier provides the semantic nuance that LLMs were intended to add: operations that are syntactically risky but potentially legitimate (e.g., <span class="math">git push --force</span>) are not blocked outright, but require explicit human confirmation. This preserves workflow flexibility without delegating judgment to an AI.</p>
   </section>
 
   <section>
     <h2>6. Applied Integration: MCP for AI Coding Assistants</h2>
-    <p>We have developed a native MCP server bridge (<span class="math">wand-mcp</span>) that transparently intercepts tool calls from AI coding assistants (Claude Code, Antigravity) and routes them through the WAND validation pipeline via JSON-RPC 2.0 over standard I/O.</p>
-    <p>The coding assistant spawns the <span class="math">wand-mcp</span> binary as a subprocess. Every proposed action is serialized as a JSON-RPC request and forwarded to the WAND node over mTLS HTTPS. The response (<span class="math">APPROVED</span> or <span class="math">BLOCKED</span>) is returned before execution proceeds.</p>
-    <p>This demonstrates WAND's generality as a universal safety layer: the same PBFT consensus and heuristic gating that protects autonomous agent swarms can protect individual developer workflows with zero configuration beyond a single MCP endpoint declaration.</p>
+    <p>WAND ships with a native MCP (Model Context Protocol) server bridge (<span class="math">wand-mcp</span>) that transparently intercepts tool calls from AI coding assistants and routes them through the validation pipeline via JSON-RPC 2.0 over standard I/O.</p>
+    <p>The coding assistant spawns the <span class="math">wand-mcp</span> binary as a subprocess. Every proposed action is serialized as a JSON-RPC request and forwarded to the WAND node over mTLS HTTPS. The three-tier response (ALLOW, CHALLENGE, or BLOCK) is returned before execution proceeds.</p>
+    <p>For interactive coding sessions where the developer is present, WAND is not strictly necessary -- the agent's built-in confirmation dialogs are sufficient. WAND's MCP integration is most valuable when AI coding assistants are used in automated workflows (CI/CD pipelines, batch refactoring, autonomous code review agents) where no human is monitoring the session.</p>
   </section>
 
   <section>
-    <h2>7. Related Work</h2>
-    <p>Castro and Liskov's foundational formalization of PBFT [3] provides the mathematical backbone for deterministic state machine replication. Multi-agent frameworks like ChatDev have explored agent-to-agent communication, yet they rely on implicit social trust mechanisms rather than cryptographic consensus. WAND is uniquely positioned by providing deterministic, sub-millisecond safety enforcement with cryptographic auditability [5].</p>
+    <h2>7. Scope and Limitations</h2>
+    <p>WAND is designed for a specific threat model: preventing AI agents from executing destructive system commands. It is not a general-purpose security system. Known limitations:</p>
+    <ul>
+      <li><strong>Regex coverage:</strong> Novel attack vectors not covered by the 183-rule set will pass through. The rule set must be actively maintained as new tools and attack patterns emerge.</li>
+      <li><strong>Semantic understanding:</strong> WAND does not understand intent. A carefully obfuscated command that avoids all regex patterns will be allowed. This is a deliberate trade-off: determinism and speed over semantic completeness.</li>
+      <li><strong>Data-plane blindness:</strong> WAND validates the command string, not the data it operates on. <span class="math">UPDATE users SET role='admin' WHERE id=1</span> passes because it has a WHERE clause, regardless of whether that mutation is business-appropriate.</li>
+      <li><strong>Single point of enforcement:</strong> If the agent bypasses the WAND MCP bridge entirely (e.g., by calling system tools directly without routing through MCP), WAND cannot intercept the action.</li>
+    </ul>
   </section>
 
   <section>
-    <h2>8. Conclusion</h2>
-    <p>The WAND architecture provides the necessary structural rigidity to transition autonomous LLM agents from isolated novelties into trusted, enterprise-grade components. By enforcing deterministic policy evaluation, cryptographic auditing, and the strict Never Delegate principle, WAND eliminates the class of AI safety failures caused by trusting AI systems to evaluate their own actions.</p>
+    <h2>8. Related Work</h2>
+    <p>Traditional access control mechanisms (RBAC, ABAC) provide static authorization boundaries but cannot adapt to the dynamic, non-deterministic intent generation of LLMs. Multi-agent frameworks like ChatDev and AutoGen have explored agent-to-agent communication but rely on implicit social trust rather than independent enforcement [5]. WAND is positioned as a complementary layer that provides deterministic, sub-millisecond safety enforcement with cryptographic auditability, regardless of which AI framework or model is generating the actions.</p>
+  </section>
+
+  <section>
+    <h2>9. Conclusion</h2>
+    <p>WAND provides the structural rigidity necessary to deploy autonomous AI agents in production environments. By enforcing deterministic policy evaluation, cryptographic auditing, and the strict Never Delegate principle, WAND eliminates the class of safety failures caused by trusting AI systems to evaluate their own actions. The system is most valuable in autonomous pipelines, multi-agent orchestration, and regulated industries -- scenarios where system-prompt-based safety is demonstrably insufficient.</p>
   </section>
 
   <div class="references">
