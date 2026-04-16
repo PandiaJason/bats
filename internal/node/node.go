@@ -14,7 +14,6 @@ import (
 
 	"bats/internal/ai"
 	"bats/internal/crypto"
-	"bats/internal/network"
 	"bats/internal/policy"
 	"bats/internal/types"
 	"bats/internal/wal"
@@ -45,13 +44,11 @@ const (
 // Node represents a single WAND enforcement layer node.
 // It owns the deterministic policy engine, WAL, optional AI annotator, and HTTP server.
 type Node struct {
-	ID      string
-	Port    string
-	Peers   []string
-	Network *network.Client
-	WAL     *wal.WAL
-	AI      ai.Provider
-	Logger  *slog.Logger
+	ID     string
+	Port   string
+	WAL    *wal.WAL
+	AI     ai.Provider
+	Logger *slog.Logger
 
 	// SeenNonces prevents replay attacks by tracking used nonces.
 	SeenNonces sync.Map
@@ -63,7 +60,7 @@ type Node struct {
 	cancel context.CancelFunc
 }
 
-func NewNode(id string, port string, peers []string) *Node {
+func NewNode(id string, port string, _ []string) *Node {
 	// Determine WAL path
 	walDir := os.Getenv("WAND_DATA_DIR")
 	if walDir == "" {
@@ -76,8 +73,6 @@ func NewNode(id string, port string, peers []string) *Node {
 		slog.Error("Failed to initialize WAL", "error", err, "path", walPath)
 		os.Exit(1)
 	}
-
-	netClient := network.NewClient(id)
 
 	providerStr := os.Getenv("NODE_LLM")
 	if providerStr == "" {
@@ -98,21 +93,14 @@ func NewNode(id string, port string, peers []string) *Node {
 	})).With("node", id)
 
 	n := &Node{
-		ID:      id,
-		Port:    port,
-		Peers:   peers,
-		Network: netClient,
-		WAL:     walLog,
-		AI:      ai.GetProvider(providerStr),
-		Logger:  logger,
+		ID:     id,
+		Port:   port,
+		WAL:    walLog,
+		AI:     ai.GetProvider(providerStr),
+		Logger: logger,
 	}
 
 	return n
-}
-
-// Legacy cluster endpoints — kept as no-op stubs for backward compatibility.
-func (n *Node) HandleConsensus(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusOK)
 }
 
 func (n *Node) StatusHandler(w http.ResponseWriter, r *http.Request) {
@@ -130,22 +118,6 @@ func (n *Node) StatusHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "application/x-protobuf")
 	w.Write(data)
-}
-
-func (n *Node) HandleJoin(w http.ResponseWriter, r *http.Request) {
-	resp := &types.MembershipJoinResponse{
-		Approved:    true,
-		CurrentView: 1,
-		F:           1,
-	}
-	respData, err := proto.Marshal(resp)
-	if err != nil {
-		n.Logger.Error("Failed to marshal join response", "error", err)
-		http.Error(w, `{"error":"internal server error"}`, http.StatusInternalServerError)
-		return
-	}
-	w.WriteHeader(http.StatusOK)
-	w.Write(respData)
 }
 
 // HandleValidate is the core WAND safety pipeline.
@@ -380,10 +352,8 @@ func (n *Node) Start(port string) {
 	n.startNonceCleanup(ctx)
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("/consensus", n.HandleConsensus)
 	mux.HandleFunc("/status", n.StatusHandler)
 	mux.HandleFunc("/validate", n.rateLimitMiddleware(n.requireSecurityHeaders(n.HandleValidate)))
-	mux.HandleFunc("/join", n.HandleJoin)
 	mux.HandleFunc("/audit/export", n.HandleAuditExport)
 
 	// Cert paths — configurable via env or default convention
