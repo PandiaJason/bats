@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WAND | Deterministic Safety for Autonomous AI Agents</title>
+    <meta name="description" content="WAND is a deterministic safety enforcement and audit layer for autonomous AI agents. 136 BLOCK rules, three-tier verdicts, tamper-evident audit trail.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #050505;
+            --accent-color: #8b5cf6;
+            --secondary-accent: #3b82f6;
+            --text-main: #f8fafc;
+            --text-dim: #94a3b8;
+            --glass-bg: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --block-color: #ef4444;
+            --challenge-color: #f59e0b;
+            --allow-color: #22c55e;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: var(--bg-color);
+            color: var(--text-main);
+            font-family: 'Outfit', sans-serif;
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+
+        .hero-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background: radial-gradient(ellipse at 50% 0%, rgba(139, 92, 246, 0.08), transparent 60%),
+                        var(--bg-color);
+        }
+
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 2rem 10%;
+            position: absolute;
+            width: 100%;
+            top: 0;
+            z-index: 10;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            letter-spacing: 2px;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo span {
+            color: var(--accent-color);
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+        }
+
+        .nav-links a {
+            color: var(--text-dim);
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: 0.3s;
+        }
+
+        .nav-links a:hover {
+            color: var(--text-main);
+        }
+
+        .hero {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 0 10%;
+        }
+
+        .badge {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            padding: 8px 16px;
+            border-radius: 100px;
+            font-size: 0.75rem;
+            letter-spacing: 1px;
+            color: var(--accent-color);
+            margin-bottom: 2rem;
+            backdrop-filter: blur(10px);
+        }
+
+        h1 {
+            font-size: 4.5rem;
+            font-weight: 700;
+            max-width: 900px;
+            margin-bottom: 1.5rem;
+            background: linear-gradient(to bottom, #fff 40%, rgba(255,255,255,0.4));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            line-height: 1.1;
+        }
+
+        .subtitle {
+            font-size: 1.25rem;
+            color: var(--text-dim);
+            max-width: 650px;
+            margin-bottom: 3rem;
+        }
+
+        .cta-group {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .btn {
+            padding: 16px 32px;
+            border-radius: 8px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: 0.3s;
+            cursor: pointer;
+        }
+
+        .btn-primary {
+            background: var(--accent-color);
+            color: white;
+            box-shadow: 0 0 20px rgba(139, 92, 246, 0.4);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 30px rgba(139, 92, 246, 0.6);
+        }
+
+        .btn-secondary {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            color: var(--text-main);
+            backdrop-filter: blur(10px);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255,255,255,0.1);
+        }
+
+        .section {
+            padding: 100px 10%;
+            background: var(--bg-color);
+        }
+
+        .section-title {
+            font-size: 2.5rem;
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+
+        .section-subtitle {
+            text-align: center;
+            color: var(--text-dim);
+            max-width: 600px;
+            margin: 0 auto 3rem;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .card {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            padding: 2.5rem;
+            border-radius: 16px;
+            transition: 0.3s;
+            backdrop-filter: blur(10px);
+        }
+
+        .card:hover {
+            border-color: var(--accent-color);
+            transform: translateY(-5px);
+        }
+
+        .card h3 {
+            font-size: 1.3rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .card p {
+            color: var(--text-dim);
+            font-size: 0.9rem;
+        }
+
+        .verdict-indicator {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            letter-spacing: 1px;
+            margin-bottom: 1rem;
+        }
+
+        .verdict-block { background: rgba(239, 68, 68, 0.15); color: var(--block-color); }
+        .verdict-challenge { background: rgba(245, 158, 11, 0.15); color: var(--challenge-color); }
+        .verdict-allow { background: rgba(34, 197, 94, 0.15); color: var(--allow-color); }
+
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 2rem;
+        }
+
+        .comparison-table th,
+        .comparison-table td {
+            padding: 16px 20px;
+            text-align: left;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .comparison-table th {
+            color: var(--text-dim);
+            font-weight: 400;
+            font-size: 0.85rem;
+            letter-spacing: 0.5px;
+        }
+
+        .comparison-table td {
+            font-size: 0.9rem;
+        }
+
+        .comparison-table td:nth-child(2),
+        .comparison-table td:nth-child(3) {
+            color: var(--text-dim);
+        }
+
+        .integration-preview {
+            margin-top: 3rem;
+            background: #000;
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 40px;
+            text-align: left;
+            position: relative;
+        }
+
+        .code-block {
+            background: #0a0a0a;
+            padding: 20px;
+            border-radius: 10px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            color: #d1d5db;
+            border: 1px solid #1f2937;
+            overflow-x: auto;
+            white-space: pre;
+        }
+
+        .code-comment { color: #6b7280; }
+        .code-key { color: #93c5fd; }
+        .code-string { color: #86efac; }
+        .code-bool { color: #fbbf24; }
+        .code-blocked { color: #ef4444; }
+
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+
+        .stat {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent-color), var(--secondary-accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .stat-label {
+            color: var(--text-dim);
+            font-size: 0.85rem;
+            margin-top: 0.25rem;
+        }
+
+        .footer {
+            padding: 60px 10%;
+            text-align: center;
+            border-top: 1px solid var(--glass-border);
+        }
+
+        .xs10s-logo {
+            font-weight: 600;
+            color: var(--text-dim);
+            font-size: 0.8rem;
+            letter-spacing: 2px;
+            margin-top: 20px;
+        }
+
+        @media (max-width: 768px) {
+            h1 { font-size: 3rem; }
+            .grid { grid-template-columns: 1fr; }
+            .stats-row { grid-template-columns: repeat(2, 1fr); }
+        }
+    </style>
+</head>
+<body>
+    <div class="hero-bg"></div>
+    
+    <nav>
+        <div class="logo">WAND<span>.</span></div>
+        <div class="nav-links">
+            <a href="#why">WHY WAND</a>
+            <a href="#features">FEATURES</a>
+            <a href="#integrations">INTEGRATIONS</a>
+            <a href="https://github.com/PandiaJason/bats">GITHUB</a>
+        </div>
+    </nav>
+
+    <div class="hero">
+        <div class="badge">V5.0 PRODUCTION RELEASE</div>
+        <h1>Safety enforcement for autonomous AI agents.</h1>
+        <p class="subtitle">WAND is a deterministic policy engine that sits between your AI agents and production infrastructure. It blocks destructive actions, challenges risky ones, and logs every decision in a tamper-evident audit trail.</p>
+        <div class="cta-group">
+            <a href="#integrations" class="btn btn-primary">GET STARTED</a>
+            <a href="https://github.com/PandiaJason/bats" class="btn btn-secondary">VIEW SOURCE</a>
+        </div>
+    </div>
+
+    <section id="why" class="section">
+        <h2 class="section-title">When do you need WAND?</h2>
+        <p class="section-subtitle">Interactive AI tools already ask before deleting. WAND solves a different problem: agents that run without a human watching.</p>
+
+        <table class="comparison-table">
+            <thead>
+                <tr>
+                    <th>SCENARIO</th>
+                    <th>SYSTEM PROMPT / SKILL.MD</th>
+                    <th>WAND</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Solo dev using Claude Code interactively</td>
+                    <td>Sufficient</td>
+                    <td>Not needed</td>
+                </tr>
+                <tr>
+                    <td>Automated pipelines (n8n, LangChain, cron agents)</td>
+                    <td>No human reads the prompt at runtime</td>
+                    <td style="color: var(--allow-color);">Hard gate stops execution</td>
+                </tr>
+                <tr>
+                    <td>Multi-agent orchestration (A calls B calls C)</td>
+                    <td>Inner agents may ignore safety prompts</td>
+                    <td style="color: var(--allow-color);">Single enforcement point</td>
+                </tr>
+                <tr>
+                    <td>Compliance (finance, healthcare, education)</td>
+                    <td>"We told the AI to be careful" fails audits</td>
+                    <td style="color: var(--allow-color);">Cryptographic proof in WAL</td>
+                </tr>
+                <tr>
+                    <td>Prompt injection / jailbreak resistance</td>
+                    <td>Prompts can be overridden</td>
+                    <td style="color: var(--allow-color);">Deterministic regex -- cannot be convinced</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="stats-row">
+            <div class="stat">
+                <div class="stat-value">136</div>
+                <div class="stat-label">BLOCK Rules</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value">47</div>
+                <div class="stat-label">CHALLENGE Rules</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value">&lt;5ms</div>
+                <div class="stat-label">p50 Latency</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value">0</div>
+                <div class="stat-label">AI in Decision Path</div>
+            </div>
+        </div>
+    </section>
+
+    <section id="features" class="section">
+        <h2 class="section-title">Three-tier deterministic verdicts.</h2>
+        <div class="grid">
+            <div class="card">
+                <div class="verdict-indicator verdict-block">BLOCK</div>
+                <h3>Hard Deny</h3>
+                <p>136 pre-compiled regex rules covering filesystem destruction, SQL injection, reverse shells, credential theft, cloud resource deletion, and privilege escalation. Immediate rejection, no override.</p>
+            </div>
+            <div class="card">
+                <div class="verdict-indicator verdict-challenge">CHALLENGE</div>
+                <h3>Halt and Ask</h3>
+                <p>47 rules for risky-but-legitimate operations: force pushes, sudo, package installs, Docker runs. The agent must stop and get explicit human re-approval before proceeding.</p>
+            </div>
+            <div class="card">
+                <div class="verdict-indicator verdict-allow">ALLOW</div>
+                <h3>Safe to Execute</h3>
+                <p>No dangerous pattern matched. The action is approved and logged in the hash-chained WAL with fsync durability. Optional async AI annotation for metadata enrichment.</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="section">
+        <h2 class="section-title">Production-grade infrastructure.</h2>
+        <div class="grid">
+            <div class="card">
+                <h3>Hash-Chained WAL</h3>
+                <p>Every decision -- BLOCK, CHALLENGE, ALLOW -- is recorded in a SHA-256 hash-chained Write-Ahead Log with fsync durability. Any tampering breaks the chain. JSON and CSV export for compliance.</p>
+            </div>
+            <div class="card">
+                <h3>Never Delegate</h3>
+                <p>No AI, LLM, or probabilistic system participates in safety decisions. The policy engine is pure regex pattern matching -- fully auditable, fully deterministic, fully reproducible.</p>
+            </div>
+            <div class="card">
+                <h3>Defense in Depth</h3>
+                <p>mTLS transport, crypto/rand nonces with replay protection, per-IP rate limiting, request body size limits, graceful shutdown with connection draining, structured JSON logging.</p>
+            </div>
+        </div>
+    </section>
+
+    <section id="integrations" class="section" style="background: #050505;">
+        <h2 class="section-title">Drop-in MCP integration.</h2>
+        <p class="section-subtitle">Works with Claude Code, Antigravity, or any MCP-compatible AI agent. Three tools exposed: validate_action, check_health, get_audit_log.</p>
+        <div class="integration-preview">
+            <div class="code-block"><span class="code-comment">// Agent proposes a destructive action</span>
+POST https://localhost:8001/validate
+{
+  <span class="code-key">"action"</span>: <span class="code-string">"DROP TABLE users"</span>
+}
+
+<span class="code-comment">// WAND deterministic response (&lt;5ms)</span>
+{
+  <span class="code-key">"approved"</span>: <span class="code-blocked">false</span>,
+  <span class="code-key">"decision"</span>: <span class="code-blocked">"BLOCK"</span>,
+  <span class="code-key">"reason"</span>: <span class="code-string">"WAND HARD BLOCK: sql_destructive"</span>
+}</div>
+            <p style="margin-top: 20px; color: var(--text-dim);">Every action your agent proposes passes through the deterministic policy engine before execution. No exceptions, no overrides, no jailbreaks.</p>
+        </div>
+    </section>
+
+    <div class="footer">
+        <div class="xs10s-logo">BUILT BY XS10S RESEARCH</div>
+        <p style="margin-top: 20px; color: #444; font-size: 0.75rem;">&copy; 2026 WAND -- Watch. Audit. Never Delegate.</p>
+    </div>
+</body>
+</html>

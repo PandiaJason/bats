@@ -20,7 +20,7 @@ func main() {
 	config := Config{
 		APIKey: os.Getenv("OPENAI_API_KEY"),
 		Model:  "gpt-4o-mini",
-		Prompt: "Summarize BATS (Byzantine Agent Trust System) in 1 sentence. Use EXACTLY these words in order: 'Byzantine resilient consensus for agents.'",
+		Prompt: "Summarize WAND (Watch. Audit. Never Delegate.) in 1 sentence. Use EXACTLY these words in order: 'Deterministic safety enforcement for agents.'",
 		Node:   "localhost:8001",
 	}
 
@@ -84,5 +84,5 @@ func submitToCluster(node string, content string) {
 
 	url := "http://" + node + "/start"
 	http.Post(url, "text/plain", bytes.NewBuffer([]byte(content)))
-	fmt.Println("✅ AI Decision submitted to BATS cluster for verification.")
+	fmt.Println("✅ AI Decision submitted to WAND cluster for verification.")
 }

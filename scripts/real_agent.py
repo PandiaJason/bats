@@ -6,7 +6,7 @@ import subprocess
 import time
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'integrations', 'openclaw-wrapper'))
-from bats_vettor import BatsSafetyGate
+from wand_vettor import WandSafetyGate
 
 API_KEY = os.environ.get("GEMINI_API_KEY", "")
 
@@ -73,14 +73,14 @@ def main():
         
     goal = sys.argv[1]
     # Configure the Safety Gate pointing to localhost:8001
-    gate = BatsSafetyGate("https://localhost:8001/validate")
+    gate = WandSafetyGate("https://localhost:8001/validate")
     
     messages = [
         {"role": "user", "content": f"Your objective is: {goal}. Formulate a plan and return the very first bash command to run in JSON. Do not explain, just return JSON."}
     ]
     
     print("==================================================")
-    print("[BATS Autonomous Agent Activated]")
+    print("[WAND Autonomous Agent Activated]")
     print(f"[Objective]: {goal}")
     print("==================================================\n")
     
@@ -97,14 +97,14 @@ def main():
             break
             
         print(f"[Proposed Command]: `{cmd}`")
-        print("[Requesting BATS validation...]")
+        print("[Requesting WAND validation...]")
         
         start = time.time()
-        # BATS execution pipeline: Will ONLY execute the target function if BATS cluster approves
+        # WAND execution pipeline: Will ONLY execute the target function if WAND approves
         result = gate.execute_safely(cmd, execute_local)
         duration = time.time() - start
         
-        print(f"[BATS Evaluation]: {duration:.2f}s")
+        print(f"[WAND Evaluation]: {duration:.2f}s")
         
         # Format result to feed back to LLM
         if isinstance(result, dict) and "error" in result:

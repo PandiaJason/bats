@@ -9,8 +9,8 @@ import (
 	"testing"
 )
 
-// TestFastPath_SafeRead verifies that a safe read action gets approved
-// via the optimistic fast-path without blocking on PBFT consensus.
+// TestFastPath_SafeRead verifies that a safe read action is immediately
+// approved by the deterministic WAND policy engine.
 func TestFastPath_SafeRead(t *testing.T) {
 	os.Chdir("/Users/admin/BATS/bats/")
 	os.Setenv("OPENAI_API_KEY", "")
@@ -32,41 +32,57 @@ func TestFastPath_SafeRead(t *testing.T) {
 	if resp["approved"] != true {
 		t.Fatalf("Expected approved=true, got %v", resp["approved"])
 	}
-	if resp["fast_path"] != true {
-		t.Fatalf("Expected fast_path=true, got %v", resp["fast_path"])
-	}
-	conf, ok := resp["confidence"].(float64)
-	if !ok || conf < 0.95 {
-		t.Fatalf("Expected confidence >= 0.95, got %v", resp["confidence"])
-	}
 }
 
 // TestSyncPath_SafeWrite verifies that a safe state-mutating action
-// goes through the synchronous PBFT path (and times out in standalone mode).
+// that doesn't match any dangerous or risky pattern gets ALLOW verdict.
 func TestSyncPath_SafeWrite(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping sync-path test in short mode (10s timeout)")
-	}
 	os.Chdir("/Users/admin/BATS/bats/")
 	os.Setenv("OPENAI_API_KEY", "")
 
 	n := NewNode("node1", "8001", []string{})
 
-	// "update" is SAFE but not SAFE_READ, so it goes through sync PBFT
-	body := []byte(`{"action": "update user profile 123"}`)
+	// "save" doesn't match any block or challenge pattern
+	body := []byte(`{"action": "save user profile 123"}`)
 	req, _ := http.NewRequest("POST", "/validate", bytes.NewBuffer(body))
 	rr := httptest.NewRecorder()
 	n.HandleValidate(rr, req)
 
-	// In standalone mode, this will timeout because there is no quorum
 	var resp map[string]interface{}
 	json.Unmarshal(rr.Body.Bytes(), &resp)
 
-	if resp["approved"] == true {
-		// If somehow approved, verify it was NOT fast-path
-		if resp["fast_path"] == true {
-			t.Fatal("Write action must never use fast-path")
-		}
+	if resp["approved"] != true {
+		t.Fatalf("Expected approved=true for safe write action, got %v (decision=%v)", resp["approved"], resp["decision"])
+	}
+	if resp["decision"] != "ALLOW" {
+		t.Fatalf("Expected decision=ALLOW, got %v", resp["decision"])
+	}
+}
+
+// TestChallengeAction verifies that risky-but-legitimate actions get
+// the CHALLENGE verdict, which requires user re-approval.
+func TestChallengeAction(t *testing.T) {
+	os.Chdir("/Users/admin/BATS/bats/")
+	os.Setenv("OPENAI_API_KEY", "")
+
+	n := NewNode("node1", "8001", []string{})
+
+	body := []byte(`{"action": "git push --force origin main"}`)
+	req, _ := http.NewRequest("POST", "/validate", bytes.NewBuffer(body))
+	rr := httptest.NewRecorder()
+	n.HandleValidate(rr, req)
+
+	var resp map[string]interface{}
+	json.Unmarshal(rr.Body.Bytes(), &resp)
+
+	if resp["decision"] != "CHALLENGE" {
+		t.Fatalf("Expected decision=CHALLENGE for force push, got %v", resp["decision"])
+	}
+	if resp["approved"] != false {
+		t.Fatalf("CHALLENGE actions must have approved=false, got %v", resp["approved"])
+	}
+	if resp["challenge"] == nil || resp["challenge"] == "" {
+		t.Fatal("CHALLENGE response must include a challenge message for the user")
 	}
 }
 
@@ -91,7 +107,7 @@ func TestBlockedAction(t *testing.T) {
 }
 
 // BenchmarkHandleValidate_FastPath measures the end-to-end latency of the
-// optimistic fast-path for safe read actions. Target: under 100ms (100,000,000 ns).
+// deterministic WAND policy evaluation for safe read actions.
 func BenchmarkHandleValidate_FastPath(b *testing.B) {
 	os.Chdir("/Users/admin/BATS/bats/")
 	os.Setenv("OPENAI_API_KEY", "")

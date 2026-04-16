@@ -1,8 +1,8 @@
-# Contributing toThe BATS (Byzantine Agent Trust System) is a high-integrity, **Byzantine-Resilient** coordination layer. We maintain strict engineering standards to ensure that the "wire" beneath autonomous agents remains secure and deterministic.
+# Contributing to WAND (Watch. Audit. Never Delegate.) is a high-integrity, **deterministic safety** coordination layer. We maintain strict engineering standards to ensure that the "wire" beneath autonomous agents remains secure and deterministic.
 
 ## 🎖️ Engineering Philosophy
 
-We follow a **Byzantine-Resilient** approach. A single bug in the consensus logic can compromise the safety of the entire agent swarm. Therefore, we do not "vibe-code." Every change must be backed by:
+We follow a **deterministic safety** approach. A single bug in the consensus logic can compromise the safety of the entire agent swarm. Therefore, we do not "vibe-code." Every change must be backed by:
 integrity of the protocol, all contributions must adhere to the following rigorous standards.
 
 ---
@@ -15,9 +15,9 @@ All consensus-related logic must be strictly deterministic.
 - **Requirement**: No Pull Request will be merged without passing the **Xs10s Adversarial Gauntlet**, which tests for drift under simulated network partitions and message reordering.
 
 ### 2. Memory Safety & Buffer Integrity
-To mitigate **ASI03 (Payload Mutation)** vulnerabilities, BATS enforces strict memory hygiene.
+To mitigate payload mutation vulnerabilities, WAND enforces strict memory hygiene.
 - **Fixed-Size Buffers**: Use fixed-size binary buffers (e.g., `[64]byte`) for all cryptographic handles.
-- **Pointer Discipline**: Minimize pointer arithmetic and ensure all shared state is protected by the BATS thread-safety primitives.
+- **Pointer Discipline**: Minimize pointer arithmetic and ensure all shared state is protected by the WAND thread-safety primitives.
 - **Serialization**: Only Protocol Buffers (v3) are permitted for over-the-wire data to ensure deterministic binary representation.
 
 ### 3. Formal Verification
@@ -35,7 +35,7 @@ Any logic affecting the **Verifiable Agreement Layer (VAL)** or the PBFT state m
 
 ## ⚖️ License & Credits
 
-By contributing to BATS, you agree that your contributions will be licensed under the project's **MIT License**.
+By contributing to WAND, you agree that your contributions will be licensed under the project's **MIT License**.
 
 ---
 

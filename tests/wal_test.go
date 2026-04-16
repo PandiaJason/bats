@@ -20,7 +20,7 @@ func TestHashChainedWAL_Security(t *testing.T) {
 	}
 
 	// 1. Log two separate transactions
-	err = log.Append("action-sync-cluster", "agent-x", "APPROVED", map[string]bool{"node1": true})
+	err = log.Append("action-sync-cluster", "agent-x", "APPROVED", map[string]string{"annotation": "test metadata"})
 	if err != nil {
 		t.Fatalf("Failed append 1: %v", err)
 	}

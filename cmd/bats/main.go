@@ -8,8 +8,8 @@ import (
 
 func main() {
 	if len(os.Args) < 2 {
-		fmt.Println("BATS Cluster CLI")
-		fmt.Println("Usage: bats <command>")
+		fmt.Println("WAND CLI")
+		fmt.Println("Usage: wand <command>")
 		fmt.Println("Commands:")
 		fmt.Println("  start     - Start the cluster via Docker Compose")
 		fmt.Println("  stop      - Stop the cluster")

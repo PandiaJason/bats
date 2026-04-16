@@ -1,6 +1,6 @@
 # =============================================================================
-# BATS (Byzantine Agent Trust System) — Docker Compose
-# Spins up a 4-node PBFT cluster + optional dashboard with one command.
+# WAND (Watch. Audit. Never Delegate.) — Docker Compose
+# Spins up a 4-node WAND enforcement node + optional dashboard with one command.
 #
 # Usage:
 #   docker compose up              # Start cluster + dashboard
@@ -15,19 +15,19 @@ services:
   # ── Node 1 (Genesis Leader) ────────────────────────────────────────────────
   node1:
     build: .
-    container_name: bats-node1
+    container_name: wand-node1
     command: ["/node", "node1", "8001"]
     environment:
       - PEERS=node1:8001,node2:8002,node3:8003,node4:8004
       - AI_PROVIDER=${AI_PROVIDER:-}
       - OPENAI_API_KEY=${OPENAI_API_KEY:-}
-      - BATS_CONSENSUS_TIMEOUT_MS=${BATS_CONSENSUS_TIMEOUT_MS:-800}
+      - WAND_POLICY_TIMEOUT_MS=${WAND_POLICY_TIMEOUT_MS:-800}
     ports:
       - "8001:8001"
     volumes:
       - ./certs:/certs:ro
     networks:
-      - bats-net
+      - wand-net
     healthcheck:
       test: ["CMD", "wget", "--no-check-certificate", "-qO-", "https://localhost:8001/status"]
       interval: 5s
@@ -39,18 +39,18 @@ services:
   # ── Node 2 ─────────────────────────────────────────────────────────────────
   node2:
     build: .
-    container_name: bats-node2
+    container_name: wand-node2
     command: ["/node", "node2", "8002"]
     environment:
       - PEERS=node1:8001,node2:8002,node3:8003,node4:8004
       - AI_PROVIDER=${AI_PROVIDER:-}
-      - BATS_CONSENSUS_TIMEOUT_MS=${BATS_CONSENSUS_TIMEOUT_MS:-800}
+      - WAND_POLICY_TIMEOUT_MS=${WAND_POLICY_TIMEOUT_MS:-800}
     ports:
       - "8002:8002"
     volumes:
       - ./certs:/certs:ro
     networks:
-      - bats-net
+      - wand-net
     healthcheck:
       test: ["CMD", "wget", "--no-check-certificate", "-qO-", "https://localhost:8002/status"]
       interval: 5s
@@ -65,18 +65,18 @@ services:
   # ── Node 3 ─────────────────────────────────────────────────────────────────
   node3:
     build: .
-    container_name: bats-node3
+    container_name: wand-node3
     command: ["/node", "node3", "8003"]
     environment:
       - PEERS=node1:8001,node2:8002,node3:8003,node4:8004
       - AI_PROVIDER=${AI_PROVIDER:-}
-      - BATS_CONSENSUS_TIMEOUT_MS=${BATS_CONSENSUS_TIMEOUT_MS:-800}
+      - WAND_POLICY_TIMEOUT_MS=${WAND_POLICY_TIMEOUT_MS:-800}
     ports:
       - "8003:8003"
     volumes:
       - ./certs:/certs:ro
     networks:
-      - bats-net
+      - wand-net
     healthcheck:
       test: ["CMD", "wget", "--no-check-certificate", "-qO-", "https://localhost:8003/status"]
       interval: 5s
@@ -91,18 +91,18 @@ services:
   # ── Node 4 ─────────────────────────────────────────────────────────────────
   node4:
     build: .
-    container_name: bats-node4
+    container_name: wand-node4
     command: ["/node", "node4", "8004"]
     environment:
       - PEERS=node1:8001,node2:8002,node3:8003,node4:8004
       - AI_PROVIDER=${AI_PROVIDER:-}
-      - BATS_CONSENSUS_TIMEOUT_MS=${BATS_CONSENSUS_TIMEOUT_MS:-800}
+      - WAND_POLICY_TIMEOUT_MS=${WAND_POLICY_TIMEOUT_MS:-800}
     ports:
       - "8004:8004"
     volumes:
       - ./certs:/certs:ro
     networks:
-      - bats-net
+      - wand-net
     healthcheck:
       test: ["CMD", "wget", "--no-check-certificate", "-qO-", "https://localhost:8004/status"]
       interval: 5s
@@ -117,7 +117,7 @@ services:
   # ── Dashboard (optional) ───────────────────────────────────────────────────
   dashboard:
     build: .
-    container_name: bats-dashboard
+    container_name: wand-dashboard
     entrypoint: ["/dashboard"]
     environment:
       - PEERS=node1:8001,node2:8002,node3:8003,node4:8004
@@ -126,7 +126,7 @@ services:
     volumes:
       - ./certs:/certs:ro
     networks:
-      - bats-net
+      - wand-net
     depends_on:
       node1:
         condition: service_healthy
@@ -135,5 +135,5 @@ services:
       - dashboard
 
 networks:
-  bats-net:
+  wand-net:
     driver: bridge

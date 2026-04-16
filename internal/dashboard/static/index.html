@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BATS Desktop</title>
+    <title>WAND Desktop</title>
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         :root {
@@ -353,7 +353,7 @@
     <nav class="sidebar">
         <div class="brand">
             <div class="brand-icon">B</div>
-            BATS Desktop
+            WAND Desktop
         </div>
         <ul class="nav-list">
             <li class="nav-item active">
@@ -399,7 +399,7 @@
         <!-- Page body -->
         <div class="page-content">
             <h1 class="page-title">Consensus Nodes</h1>
-            <p class="page-subtitle">Manage BATS cluster participation and monitor active PBFT validations.</p>
+            <p class="page-subtitle">Manage WAND enforcement nodes and monitor active validations.</p>
 
             <div class="stats-banner">
                 <div class="stat-item">
@@ -437,11 +437,11 @@
 
     <script>
         const nodes = [
-            { id: 'bats-node1', status: 'Running', port: '8001:8001', role: 'Leader' },
-            { id: 'bats-node2', status: 'Running', port: '8002:8002', role: 'Follower' },
-            { id: 'bats-node3', status: 'Running', port: '8003:8003', role: 'Follower' },
-            { id: 'bats-node4', status: 'Running', port: '8004:8004', role: 'Follower' },
-            { id: 'bats-node5', status: 'Exited (0)', port: '8005:8005', role: 'Follower' }
+            { id: 'wand-node1', status: 'Running', port: '8001:8001', role: 'Leader' },
+            { id: 'wand-node2', status: 'Running', port: '8002:8002', role: 'Follower' },
+            { id: 'wand-node3', status: 'Running', port: '8003:8003', role: 'Follower' },
+            { id: 'wand-node4', status: 'Running', port: '8004:8004', role: 'Follower' },
+            { id: 'wand-node5', status: 'Exited (0)', port: '8005:8005', role: 'Follower' }
         ];
 
         function renderRows() {

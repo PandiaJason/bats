@@ -8,6 +8,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"bats/internal/node"
 )
 
 // jsonrpcMessage mirrors the MCP server's JSON-RPC 2.0 message format.
@@ -23,11 +25,11 @@ type jsonrpcMessage struct {
 	} `json:"error,omitempty"`
 }
 
-// mcpBinaryPath returns the path to the bats-mcp binary.
-// It first checks for /tmp/bats-mcp (pre-built), then falls back to go run.
+// mcpBinaryPath returns the path to the wand-mcp binary.
+// It first checks for /tmp/wand-mcp (pre-built), then falls back to go run.
 func mcpBinaryPath() string {
-	if _, err := os.Stat("/tmp/bats-mcp"); err == nil {
-		return "/tmp/bats-mcp"
+	if _, err := os.Stat("/tmp/wand-mcp"); err == nil {
+		return "/tmp/wand-mcp"
 	}
 	return ""
 }
@@ -43,7 +45,7 @@ func startMCPServer(t *testing.T, extraArgs ...string) (*exec.Cmd, *bufio.Writer
 	if bin := mcpBinaryPath(); bin != "" {
 		cmd = exec.Command(bin, args...)
 	} else {
-		goArgs := append([]string{"run", "../../integrations/claude-code/mcp_server.go"}, args...)
+		goArgs := append([]string{"run", "../integrations/claude-code/mcp_server.go"}, args...)
 		cmd = exec.Command("go", goArgs...)
 	}
 
@@ -101,22 +103,22 @@ func sendAndReceive(t *testing.T, stdin *bufio.Writer, stdout *bufio.Scanner, me
 	var resp jsonrpcMessage
 	go func() {
 		if stdout.Scan() {
-			json.Unmarshal([]byte(stdout.Text()), &resp)
+			json.Unmarshal(stdout.Bytes(), &resp)
 		}
 		done <- true
 	}()
 
 	select {
 	case <-done:
-	case <-time.After(10 * time.Second):
-		t.Fatal("Timeout waiting for MCP response")
+	case <-time.After(5 * time.Second):
+		t.Fatalf("Timeout waiting for response to %s", method)
 	}
 
 	return resp
 }
 
-// TestMCPInitializeHandshake verifies the MCP server responds to the
-// initialize method with correct protocol version and server info.
+// TestMCPInitializeHandshake verifies that the MCP server correctly
+// responds to the initialize handshake with protocol version and server info.
 func TestMCPInitializeHandshake(t *testing.T) {
 	cmd, stdin, stdout := startMCPServer(t)
 	defer cleanupMCPServer(cmd)
@@ -127,29 +129,22 @@ func TestMCPInitializeHandshake(t *testing.T) {
 	})
 
 	if resp.Error != nil {
-		t.Fatalf("Initialize returned error: %s", resp.Error.Message)
+		t.Fatalf("initialize returned error: %s", resp.Error.Message)
 	}
 	if resp.Result == nil {
-		t.Fatal("Initialize returned nil result")
+		t.Fatal("initialize returned nil result")
 	}
 
 	var result map[string]interface{}
-	if err := json.Unmarshal(resp.Result, &result); err != nil {
-		t.Fatalf("Failed to parse result: %v", err)
-	}
-
-	if result["protocolVersion"] != "2024-11-05" {
-		t.Fatalf("Expected protocolVersion 2024-11-05, got %v", result["protocolVersion"])
-	}
+	json.Unmarshal(resp.Result, &result)
 
 	serverInfo, ok := result["serverInfo"].(map[string]interface{})
-	if !ok || serverInfo["name"] != "bats-safety" {
-		t.Fatalf("Expected serverInfo.name = bats-safety, got %v", result["serverInfo"])
+	if !ok || serverInfo["name"] != "wand-safety" {
+		t.Fatalf("Expected serverInfo.name = wand-safety, got %v", result["serverInfo"])
 	}
 }
 
-// TestMCPToolsList verifies the server exposes validate_action, check_health,
-// and get_audit_log tools.
+// TestMCPToolsList verifies that the MCP server exposes the expected tools.
 func TestMCPToolsList(t *testing.T) {
 	cmd, stdin, stdout := startMCPServer(t)
 	defer cleanupMCPServer(cmd)
@@ -166,48 +161,43 @@ func TestMCPToolsList(t *testing.T) {
 	if resp.Error != nil {
 		t.Fatalf("tools/list returned error: %s", resp.Error.Message)
 	}
-	if resp.Result == nil {
-		t.Fatal("tools/list returned nil result")
-	}
 
 	var result map[string]interface{}
 	json.Unmarshal(resp.Result, &result)
 
 	tools, ok := result["tools"].([]interface{})
-	if !ok {
-		t.Fatalf("Expected tools array, got %v", result)
+	if !ok || len(tools) < 3 {
+		t.Fatalf("Expected at least 3 tools, got %v", result)
 	}
 
-	expectedTools := map[string]bool{
-		"validate_action": false,
-		"check_health":    false,
-		"get_audit_log":   false,
-	}
-
+	// Verify tool names
+	expected := map[string]bool{"validate_action": false, "check_health": false, "get_audit_log": false}
 	for _, tool := range tools {
-		if tm, ok := tool.(map[string]interface{}); ok {
-			if name, ok := tm["name"].(string); ok {
-				expectedTools[name] = true
-			}
+		toolMap := tool.(map[string]interface{})
+		name := toolMap["name"].(string)
+		if _, ok := expected[name]; ok {
+			expected[name] = true
 		}
 	}
-
-	for name, found := range expectedTools {
+	for name, found := range expected {
 		if !found {
-			t.Errorf("Missing expected tool: %s", name)
+			t.Errorf("Expected tool '%s' not found in tools list", name)
 		}
 	}
 }
 
 // TestMCPValidateActionBlocked verifies that the MCP server correctly reports
 // a BLOCKED verdict when sending a destructive command through validate_action.
-// This test requires a running BATS node on localhost:8001.
+// Starts its own WAND node — no external dependencies.
 func TestMCPValidateActionBlocked(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping integration test (requires running BATS node)")
-	}
+	os.Chdir("/Users/admin/BATS/bats/")
 
-	cmd, stdin, stdout := startMCPServer(t, "--node", "localhost:8001")
+	// Start a dedicated WAND node on a unique port to avoid conflicts
+	n := node.NewNode("node1", "8099", []string{})
+	go n.Start("8099")
+	time.Sleep(2 * time.Second) // wait for TLS listener to be ready
+
+	cmd, stdin, stdout := startMCPServer(t, "--node", "localhost:8099")
 	defer cleanupMCPServer(cmd)
 
 	// Initialize

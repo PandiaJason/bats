@@ -1,19 +1,21 @@
 // Package main implements a Model Context Protocol (MCP) server that bridges
-// Claude Code, Antigravity, or any MCP-compatible AI coding assistant to BATS.
+// Claude Code, Antigravity, or any MCP-compatible AI coding assistant to WAND.
 //
 // It reads JSON-RPC 2.0 messages from stdin and writes responses to stdout,
-// forwarding safety validation requests to a running BATS node.
+// forwarding safety validation requests to a running WAND node.
 //
 // Usage:
 //
-//	bats-mcp --node localhost:8001
-//	bats-mcp --node localhost:8001 --insecure
+//	wand-mcp --node localhost:8001
+//	wand-mcp --node localhost:8001 --insecure
 package main
 
 import (
 	"bufio"
 	"bytes"
+	cryptorand "crypto/rand"
 	"crypto/tls"
+	"encoding/hex"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -105,19 +107,19 @@ type callToolResult struct {
 	IsError bool          `json:"isError,omitempty"`
 }
 
-// ─── BATS Client ───
+// ─── WAND Client ───
 
-type batsClient struct {
+type wandClient struct {
 	nodeAddr   string
 	httpClient *http.Client
 }
 
-func newBATSClient(addr string, insecure bool) *batsClient {
+func newWANDClient(addr string, insecure bool) *wandClient {
 	tlsCfg := &tls.Config{}
 	if insecure {
 		tlsCfg.InsecureSkipVerify = true
 	}
-	return &batsClient{
+	return &wandClient{
 		nodeAddr: addr,
 		httpClient: &http.Client{
 			Timeout:   5 * time.Second,
@@ -126,35 +128,37 @@ func newBATSClient(addr string, insecure bool) *batsClient {
 	}
 }
 
-// validate sends an action to the BATS /validate endpoint.
-func (c *batsClient) validate(action string) (map[string]interface{}, error) {
+// validate sends an action to the WAND /validate endpoint.
+func (c *wandClient) validate(action string) (map[string]interface{}, error) {
 	body, _ := json.Marshal(map[string]string{"action": action})
 	req, err := http.NewRequest("POST", "https://"+c.nodeAddr+"/validate", bytes.NewReader(body))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %v", err)
 	}
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("X-BATS-Nonce", fmt.Sprintf("%d-%d", time.Now().UnixNano(), time.Now().UnixNano()%1000000))
+	nonceBytes := make([]byte, 16)
+	cryptorand.Read(nonceBytes)
+	req.Header.Set("X-BATS-Nonce", hex.EncodeToString(nonceBytes))
 	req.Header.Set("X-BATS-Timestamp", fmt.Sprintf("%d", time.Now().Unix()))
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("BATS node unreachable at %s: %v", c.nodeAddr, err)
+		return nil, fmt.Errorf("WAND node unreachable at %s: %v", c.nodeAddr, err)
 	}
 	defer resp.Body.Close()
 
 	var result map[string]interface{}
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return nil, fmt.Errorf("invalid response from BATS: %v", err)
+		return nil, fmt.Errorf("invalid response from WAND: %v", err)
 	}
 	return result, nil
 }
 
-// health queries the BATS /status endpoint.
-func (c *batsClient) health() (map[string]interface{}, error) {
+// health queries the WAND /status endpoint.
+func (c *wandClient) health() (map[string]interface{}, error) {
 	resp, err := c.httpClient.Get("https://" + c.nodeAddr + "/status")
 	if err != nil {
-		return nil, fmt.Errorf("BATS node unreachable: %v", err)
+		return nil, fmt.Errorf("WAND node unreachable: %v", err)
 	}
 	defer resp.Body.Close()
 
@@ -168,12 +172,12 @@ func (c *batsClient) health() (map[string]interface{}, error) {
 	}, nil
 }
 
-// walEntries queries the BATS /wal endpoint.
-func (c *batsClient) walEntries(limit int) (interface{}, error) {
+// walEntries queries the WAND /wal endpoint.
+func (c *wandClient) walEntries(limit int) (interface{}, error) {
 	url := fmt.Sprintf("https://%s/wal?format=json&limit=%d", c.nodeAddr, limit)
 	resp, err := c.httpClient.Get(url)
 	if err != nil {
-		return nil, fmt.Errorf("BATS WAL unreachable: %v", err)
+		return nil, fmt.Errorf("WAND WAL unreachable: %v", err)
 	}
 	defer resp.Body.Close()
 
@@ -189,17 +193,17 @@ func (c *batsClient) walEntries(limit int) (interface{}, error) {
 // ─── MCP Server ───
 
 type mcpServer struct {
-	bats    *batsClient
+	wand    *wandClient
 	scanner *bufio.Scanner
 	writer  *json.Encoder
 	stderr  *os.File
 }
 
-func newMCPServer(bats *batsClient) *mcpServer {
+func newMCPServer(wand *wandClient) *mcpServer {
 	scanner := bufio.NewScanner(os.Stdin)
 	scanner.Buffer(make([]byte, 1024*1024), 1024*1024) // 1MB buffer
 	return &mcpServer{
-		bats:    bats,
+		wand:    wand,
 		scanner: scanner,
 		writer:  json.NewEncoder(os.Stdout),
 		stderr:  os.Stderr,
@@ -207,7 +211,7 @@ func newMCPServer(bats *batsClient) *mcpServer {
 }
 
 func (s *mcpServer) log(format string, args ...interface{}) {
-	fmt.Fprintf(s.stderr, "[bats-mcp] "+format+"\n", args...)
+	fmt.Fprintf(s.stderr, "[wand-mcp] "+format+"\n", args...)
 }
 
 func (s *mcpServer) respond(id json.RawMessage, result interface{}) {
@@ -229,7 +233,7 @@ func (s *mcpServer) respondError(id json.RawMessage, code int, message string) {
 }
 
 func (s *mcpServer) run() {
-	s.log("Starting BATS MCP server (node: %s)", s.bats.nodeAddr)
+	s.log("Starting WAND MCP server (node: %s)", s.wand.nodeAddr)
 
 	for s.scanner.Scan() {
 		line := strings.TrimSpace(s.scanner.Text())
@@ -256,8 +260,8 @@ func (s *mcpServer) handleMessage(msg *jsonrpcMessage) {
 		s.respond(msg.ID, initializeResult{
 			ProtocolVersion: "2024-11-05",
 			ServerInfo: serverInfo{
-				Name:    "bats-safety",
-				Version: "3.2.0",
+				Name:    "wand-safety",
+				Version: "4.0.0",
 			},
 			Capabilities: capabilities{
 				Tools: &toolsCap{ListChanged: false},
@@ -277,7 +281,7 @@ func (s *mcpServer) handleMessage(msg *jsonrpcMessage) {
 			Tools: []tool{
 				{
 					Name:        "validate_action",
-					Description: "Send a proposed action to BATS for safety validation. Returns approved/blocked with confidence score and reasoning. Use this BEFORE executing any potentially dangerous command, file operation, or API call.",
+					Description: "Send a proposed action to WAND for deterministic safety validation. Returns approved/blocked with reasoning. Use this BEFORE executing any potentially dangerous command, file operation, or API call.",
 					InputSchema: inputSchema{
 						Type: "object",
 						Properties: map[string]property{
@@ -295,7 +299,7 @@ func (s *mcpServer) handleMessage(msg *jsonrpcMessage) {
 				},
 				{
 					Name:        "check_health",
-					Description: "Check the health and status of the connected BATS safety node. Returns node ID, liveness, and cluster view.",
+					Description: "Check the health and status of the connected WAND safety node.",
 					InputSchema: inputSchema{
 						Type:       "object",
 						Properties: map[string]property{},
@@ -303,7 +307,7 @@ func (s *mcpServer) handleMessage(msg *jsonrpcMessage) {
 				},
 				{
 					Name:        "get_audit_log",
-					Description: "Retrieve recent entries from the BATS tamper-evident Write-Ahead Log (WAL). Shows approved, blocked, and committed actions with hash chain integrity.",
+					Description: "Retrieve recent entries from the WAND tamper-evident Write-Ahead Log (WAL). Shows approved and blocked actions with hash chain integrity.",
 					InputSchema: inputSchema{
 						Type: "object",
 						Properties: map[string]property{
@@ -352,39 +356,42 @@ func (s *mcpServer) handleToolCall(id json.RawMessage, params *callToolParams) {
 
 		s.log("Validating action: %s", args.Action)
 
-		result, err := s.bats.validate(args.Action)
+		result, err := s.wand.validate(args.Action)
 		if err != nil {
 			s.respond(id, callToolResult{
-				Content: []textContent{{Type: "text", Text: fmt.Sprintf("BATS NODE ERROR: %v\n\nThe BATS safety node is unreachable. Action was NOT validated.", err)}},
+				Content: []textContent{{Type: "text", Text: fmt.Sprintf("WAND NODE ERROR: %v\n\nThe WAND safety node is unreachable. Action was NOT validated.", err)}},
 				IsError: true,
 			})
 			return
 		}
 
 		approved, _ := result["approved"].(bool)
-		confidence, _ := result["confidence"].(float64)
+		decision, _ := result["decision"].(string)
 		reason, _ := result["reason"].(string)
 		digest, _ := result["digest"].(string)
-		fastPath, _ := result["fast_path"].(bool)
+		challenge, _ := result["challenge"].(string)
 
 		var sb strings.Builder
-		if approved {
-			sb.WriteString("APPROVED")
-			if fastPath {
-				sb.WriteString(" (fast-path)")
-			} else {
-				sb.WriteString(" (PBFT consensus)")
-			}
-			sb.WriteString(fmt.Sprintf("\n\nAction: %s", args.Action))
-			sb.WriteString(fmt.Sprintf("\nConfidence: %.2f", confidence))
-			sb.WriteString(fmt.Sprintf("\nDigest: %s", digest))
-			sb.WriteString("\n\nThis action has been validated by BATS and is safe to execute.")
-		} else {
-			sb.WriteString("BLOCKED")
+		switch {
+		case decision == "BLOCK":
+			sb.WriteString("⛔ BLOCKED")
 			sb.WriteString(fmt.Sprintf("\n\nAction: %s", args.Action))
 			sb.WriteString(fmt.Sprintf("\nReason: %s", reason))
-			sb.WriteString(fmt.Sprintf("\nConfidence: %.2f", confidence))
-			sb.WriteString("\n\nDO NOT execute this action. It has been rejected by the BATS safety layer.")
+			sb.WriteString("\n\nDO NOT execute this action. It has been permanently rejected by the WAND safety layer.")
+
+		case decision == "CHALLENGE":
+			sb.WriteString("⚠️  CHALLENGE — User Re-Approval Required")
+			sb.WriteString(fmt.Sprintf("\n\nAction: %s", args.Action))
+			sb.WriteString(fmt.Sprintf("\nReason: %s", reason))
+			sb.WriteString(fmt.Sprintf("\n\n%s", challenge))
+			sb.WriteString("\n\nYou MUST ask the user explicitly: \"WAND flagged this action as risky. Do you want me to proceed?\"")
+			sb.WriteString("\nDo NOT proceed without explicit user confirmation.")
+
+		case approved:
+			sb.WriteString("✅ APPROVED")
+			sb.WriteString(fmt.Sprintf("\n\nAction: %s", args.Action))
+			sb.WriteString(fmt.Sprintf("\nDigest: %s", digest))
+			sb.WriteString("\n\nThis action has been validated by WAND and is safe to execute.")
 		}
 
 		s.respond(id, callToolResult{
@@ -392,11 +399,11 @@ func (s *mcpServer) handleToolCall(id json.RawMessage, params *callToolParams) {
 		})
 
 	case "check_health":
-		s.log("Checking BATS node health")
-		result, err := s.bats.health()
+		s.log("Checking WAND node health")
+		result, err := s.wand.health()
 		if err != nil {
 			s.respond(id, callToolResult{
-				Content: []textContent{{Type: "text", Text: fmt.Sprintf("BATS node unreachable: %v", err)}},
+				Content: []textContent{{Type: "text", Text: fmt.Sprintf("WAND node unreachable: %v", err)}},
 				IsError: true,
 			})
 			return
@@ -404,7 +411,7 @@ func (s *mcpServer) handleToolCall(id json.RawMessage, params *callToolParams) {
 
 		out, _ := json.MarshalIndent(result, "", "  ")
 		s.respond(id, callToolResult{
-			Content: []textContent{{Type: "text", Text: fmt.Sprintf("BATS Node Status:\n%s", string(out))}},
+			Content: []textContent{{Type: "text", Text: fmt.Sprintf("WAND Node Status:\n%s", string(out))}},
 		})
 
 	case "get_audit_log":
@@ -419,7 +426,7 @@ func (s *mcpServer) handleToolCall(id json.RawMessage, params *callToolParams) {
 		}
 
 		s.log("Fetching %d WAL entries", limit)
-		entries, err := s.bats.walEntries(limit)
+		entries, err := s.wand.walEntries(limit)
 		if err != nil {
 			s.respond(id, callToolResult{
 				Content: []textContent{{Type: "text", Text: fmt.Sprintf("WAL fetch error: %v", err)}},
@@ -430,7 +437,7 @@ func (s *mcpServer) handleToolCall(id json.RawMessage, params *callToolParams) {
 
 		out, _ := json.MarshalIndent(entries, "", "  ")
 		s.respond(id, callToolResult{
-			Content: []textContent{{Type: "text", Text: fmt.Sprintf("BATS Audit Log (last %d entries):\n%s", limit, string(out))}},
+			Content: []textContent{{Type: "text", Text: fmt.Sprintf("WAND Audit Log (last %d entries):\n%s", limit, string(out))}},
 		})
 
 	default:
@@ -441,11 +448,11 @@ func (s *mcpServer) handleToolCall(id json.RawMessage, params *callToolParams) {
 // ─── Main ───
 
 func main() {
-	nodeAddr := flag.String("node", "localhost:8001", "BATS node address (host:port)")
+	nodeAddr := flag.String("node", "localhost:8001", "WAND node address (host:port)")
 	insecure := flag.Bool("insecure", false, "Skip TLS certificate verification (dev only)")
 	flag.Parse()
 
-	client := newBATSClient(*nodeAddr, *insecure)
+	client := newWANDClient(*nodeAddr, *insecure)
 	server := newMCPServer(client)
 	server.run()
 }

@@ -7,25 +7,25 @@ import {
 
 import axios from 'axios';
 
-export class BatsSafety implements INodeType {
+export class WandSafety implements INodeType {
   description: INodeTypeDescription = {
-    displayName: 'BATS Safety Gate',
-    name: 'batsSafety',
-    icon: 'file:bats.svg',
+    displayName: 'WAND Safety Gate',
+    name: 'wandSafety',
+    icon: 'file:wand.svg',
     group: ['transform'],
     version: 1,
-    description: 'BATS Byzantine Safety Gate for AI agents',
+    description: 'WAND Deterministic Safety Gate for AI agents',
     defaults: {
-      name: 'BATS Safety Gate',
+      name: 'WAND Safety Gate',
     },
     inputs: ['main'],
     outputs: ['main'],
     properties: [
       {
-        displayName: 'BATS Cluster URL',
+        displayName: 'WAND Node URL',
         name: 'endpoint',
         type: 'string',
-        default: 'https://bats.xs10s.network/validate',
+        default: 'https://wand.xs10s.network/validate',
         required: true,
       },
       {
@@ -51,16 +51,16 @@ export class BatsSafety implements INodeType {
         returnData.push({
           json: {
             ...items[i].json,
-            bats_approved: response.data.approved,
-            bats_digest: response.data.digest,
+            wand_approved: response.data.approved,
+            wand_digest: response.data.digest,
           },
         });
       } catch (error) {
         returnData.push({
           json: {
             ...items[i].json,
-            bats_approved: false,
-            bats_error: 'BATS_UNREACHABLE',
+            wand_approved: false,
+            wand_error: 'WAND_UNREACHABLE',
           },
         });
       }

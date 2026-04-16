@@ -74,7 +74,7 @@ func main() {
 	proto.Unmarshal(respBody, &joinResp)
 
 	if joinResp.Approved {
-		fmt.Printf("✅ JOIN APPROVED! Node %s is now part of the BATS cluster.\n", id)
+		fmt.Printf("✅ JOIN APPROVED! Node %s is now part of the WAND cluster.\n", id)
 		fmt.Printf("📊 Current View: %d | F: %d | Total Nodes: %d\n", joinResp.CurrentView, joinResp.F, len(joinResp.Nodes))
 	} else {
 		fmt.Println("❌ Cluster denied join request.")

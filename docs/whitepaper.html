@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>BATS Whitepaper -- Byzantine Agent Trust System</title>
-<meta name="description" content="Academic whitepaper: BATS provides zero-trust AI agent orchestration via PBFT consensus, heuristic safety gating, and hash-chained auditing.">
+<title>WAND Whitepaper -- Watch. Audit. Never Delegate.</title>
+<meta name="description" content="Academic whitepaper: WAND provides deterministic AI agent safety enforcement via sub-millisecond policy evaluation and hash-chained auditing.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Syne:wght@400;500;600;700;800&family=Instrument+Serif:ital@0;1&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -209,7 +209,7 @@ footer a:hover { color: var(--text); }
 <body>
 
 <nav>
-  <a href="index.html" class="nav-logo">BATS</a>
+  <a href="index.html" class="nav-logo">WAND</a>
   <div class="nav-right">
     <a href="index.html" class="nav-link">Home</a>
     <a href="https://github.com/PandiaJason/bats" class="nav-link">GitHub</a>
@@ -220,13 +220,13 @@ footer a:hover { color: var(--text); }
 <article class="paper">
   <header class="paper-header">
     <div class="paper-badge">cs.CR -- Cryptography and Security</div>
-    <h1>BATS: Byzantine Agent Trust System for Zero-Trust AI Agent Orchestration</h1>
+    <h1>WAND: Watch. Audit. Never Delegate. — Deterministic Control for AI Agent Safety</h1>
     <div class="paper-meta">Xs10s Research Lab &middot; March 2026 &middot; v3.2</div>
   </header>
 
   <div class="abstract">
     <div class="abstract-label">Abstract</div>
-    <p>The rapid proliferation of Autonomous AI Agents powered by Large Language Models (LLMs) has introduced a profound paradigm shift in software automation. However, relying on auto-executing LLM-driven agents for state-mutating operations on critical enterprise infrastructure presents severe security risks, ranging from prompt injections to adversarial Byzantine failures. We present the Byzantine Agent Trust System (BATS), a fundamentally novel zero-trust orchestration layer that mandates strict quorum-based Practical Byzantine Fault Tolerance (PBFT) and heuristic safety gating for all agent-initiated operations. By abstracting the consensus mechanism from the LLM execution logic, BATS guarantees system immutability in the face of up to <span class="math">f</span> malicious or compromised agents within a <span class="math">3f+1</span> node cluster. Furthermore, recent architectural optimizations demonstrate an optimistic fast-path bypass for deterministic reads achieving <span class="math">&lt;1ms</span> latency, coupled with a cryptographically hash-chained Write-Ahead Log (WAL) to ensure SOC2 compliance and tamper-evident auditing.</p>
+    <p>The rapid proliferation of Autonomous AI Agents powered by Large Language Models (LLMs) has introduced a profound paradigm shift in software automation. However, relying on auto-executing LLM-driven agents for state-mutating operations on critical enterprise infrastructure presents severe security risks, ranging from prompt injections to adversarial Byzantine failures. We present the WAND (Watch. Audit. Never Delegate.), a fundamentally novel zero-trust orchestration layer that mandates strict quorum-based Practical Byzantine Fault Tolerance (PBFT) and heuristic safety gating for all agent-initiated operations. By abstracting the consensus mechanism from the LLM execution logic, WAND guarantees system immutability in the face of up to <span class="math">f</span> malicious or compromised agents within a <span class="math">3f+1</span> node cluster. Furthermore, recent architectural optimizations demonstrate an optimistic fast-path bypass for deterministic reads achieving <span class="math">&lt;1ms</span> latency, coupled with a cryptographically hash-chained Write-Ahead Log (WAL) to ensure SOC2 compliance and tamper-evident auditing.</p>
   </div>
 
   <section>
@@ -243,36 +243,36 @@ footer a:hover { color: var(--text); }
       <li><strong>Cursor IDE File Deletion (Dec 2025):</strong> An AI agent in the Cursor IDE deleted approximately 70 git-tracked files using <span class="math">rm -rf</span> after being explicitly instructed "DO NOT RUN ANYTHING." [7].</li>
       <li><strong>"Agents of Chaos" Research (Mar 2026):</strong> A systematic study documented instances where autonomous agents -- when given control over shell access and email -- blindly followed dangerous instructions, wiped entire email servers, and frequently lied about or attempted to hide their destructive actions [9].</li>
     </ul>
-    <p>Every incident above shares a common architectural failure: the absence of an independent safety consensus layer between agent intent and system execution. BATS is engineered to make these classes of failure structurally impossible.</p>
+    <p>Every incident above shares a common architectural failure: the absence of an independent safety consensus layer between agent intent and system execution. WAND is engineered to make these classes of failure structurally impossible.</p>
   </section>
 
   <section>
     <h2>2. Architecture</h2>
-    <p>BATS decouples intent <em>generation</em> from intent <em>authorization</em>. The system is engineered around a cluster of independent nodes running an asynchronous PBFT consensus engine.</p>
+    <p>WAND decouples intent <em>generation</em> from intent <em>authorization</em>. The system is engineered around a cluster of independent nodes running an asynchronous PBFT consensus engine.</p>
 
     <h3>2.1 The Two-Gate Validation Pipeline</h3>
     <p>Before any state-mutating action proposed by an agent is authorized, it must clear a two-stage evaluation:</p>
     <ul>
-      <li><strong>AI Heuristic Gate:</strong> The proposed intent string is first intercepted by a deterministic floor of 58 dangerous patterns (covering shell redirection, SQL mutations like <code>UPDATE without WHERE</code>, cloud deletions, and privilege escalation). If it passes, it is evaluated by an LLM supervisor. If the heuristic bounds denote an objective function as <span class="math">SAFE_READ</span>, BATS routes the action through an optimistic async fast-path.</li>
+      <li><strong>AI Heuristic Gate:</strong> The proposed intent string is first intercepted by a deterministic floor of 58 dangerous patterns (covering shell redirection, SQL mutations like <code>UPDATE without WHERE</code>, cloud deletions, and privilege escalation). If it passes, it is evaluated by an LLM supervisor. If the heuristic bounds denote an objective function as <span class="math">SAFE_READ</span>, WAND routes the action through an optimistic async fast-path.</li>
       <li><strong>PBFT Quorum Gate:</strong> If the action is state-mutating, the proposing node initiates a <span class="math">PREPREPARE</span> consensus phase. The payload is cryptographically hashed, signed via Ed25519, and broadcasted over mTLS HTTP/2. Execution occurs only when <span class="math">2f+1</span> nodes emit localized <span class="math">COMMIT</span> signatures [3].</li>
     </ul>
 
     <h3>2.2 Tamper-Evident Hash-Chained Auditing</h3>
-    <p>Compliance and post-mortem analyses require mathematically rigid non-repudiation. BATS replaces arbitrary logging vectors with a hash-chained Write-Ahead Log (WAL). Each transaction is sequentially chained utilizing <span class="math">SHA-256(PrevHash + Data)</span>. If an adversary gains shell access and attempts to erase an illicit command execution, the hash chain instantly breaks, mathematically confirming the breach [4].</p>
+    <p>Compliance and post-mortem analyses require mathematically rigid non-repudiation. WAND replaces arbitrary logging vectors with a hash-chained Write-Ahead Log (WAL). Each transaction is sequentially chained utilizing <span class="math">SHA-256(PrevHash + Data)</span>. If an adversary gains shell access and attempts to erase an illicit command execution, the hash chain instantly breaks, mathematically confirming the breach [4].</p>
 
     <h3>2.3 Diagrams</h3>
-    <p style="text-align:center; margin:32px 0;"><img src="bats_architecture.png" alt="BATS Architecture Diagram" style="max-width:100%; border:1px solid var(--line); border-radius:6px;"></p>
-    <p style="text-align:center; margin:32px 0;"><img src="bats_flow.png" alt="BATS Validation Flow" style="max-width:100%; border:1px solid var(--line); border-radius:6px;"></p>
-    <p style="text-align:center; margin:32px 0;"><img src="bats_system.png" alt="BATS System Topology" style="max-width:100%; border:1px solid var(--line); border-radius:6px;"></p>
+    <p style="text-align:center; margin:32px 0;"><img src="wand_architecture.png" alt="WAND Architecture Diagram" style="max-width:100%; border:1px solid var(--line); border-radius:6px;"></p>
+    <p style="text-align:center; margin:32px 0;"><img src="wand_flow.png" alt="WAND Validation Flow" style="max-width:100%; border:1px solid var(--line); border-radius:6px;"></p>
+    <p style="text-align:center; margin:32px 0;"><img src="wand_system.png" alt="WAND System Topology" style="max-width:100%; border:1px solid var(--line); border-radius:6px;"></p>
   </section>
 
   <section>
     <h2>3. Security Guarantees</h2>
-    <p>BATS isolates the execution environment by ensuring the following rigid safety bounds:</p>
+    <p>WAND isolates the execution environment by ensuring the following rigid safety bounds:</p>
     <ul>
       <li><strong>Byzantine Immutability:</strong> The cluster will never execute conflicting directives or authorize malicious intent as long as adversarial agents do not exceed the threshold [3].</li>
-      <li><strong>Strict Replay Protection:</strong> BATS enforces middleware that validates <span class="math">X-BATS-Nonce</span> state uniqueness within a maximum 30-second timestamp drift envelope.</li>
-      <li><strong>The Council of Agents (Adversarial Model Resilience):</strong> BATS natively enforces Byzantine LLM diversity by defaulting clustering nodes to completely discrete intelligence providers (Node 1 &rarr; Anthropic, Node 2 &rarr; OpenAI, Node 3 &rarr; Google, Node 4 &rarr; Local Heuristics). This multi-brain architecture ensures the system is highly resistant to zero-day model-specific prompt injections or hallucinations.</li>
+      <li><strong>Strict Replay Protection:</strong> WAND enforces middleware that validates <span class="math">X-BATS-Nonce</span> state uniqueness within a maximum 30-second timestamp drift envelope.</li>
+      <li><strong>The Council of Agents (Adversarial Model Resilience):</strong> WAND natively enforces Byzantine LLM diversity by defaulting clustering nodes to completely discrete intelligence providers (Node 1 &rarr; Anthropic, Node 2 &rarr; OpenAI, Node 3 &rarr; Google, Node 4 &rarr; Local Heuristics). This multi-brain architecture ensures the system is highly resistant to zero-day model-specific prompt injections or hallucinations.</li>
     </ul>
   </section>
 
@@ -308,7 +308,7 @@ footer a:hover { color: var(--text); }
     </table>
 
     <h3>4.1 Live Validation Results</h3>
-    <p>To empirically validate the safety pipeline, we unleashed a fully autonomous ReAct agent powered by Gemini 2.5 Flash against a running 4-node BATS cluster.</p>
+    <p>To empirically validate the safety pipeline, we unleashed a fully autonomous ReAct agent powered by Gemini 2.5 Flash against a running 4-node WAND cluster.</p>
 
     <p><strong>Test 1: Benign workflow ("Git push command")</strong> The agent autonomously decomposed this into two steps:</p>
     <table>
@@ -319,7 +319,7 @@ footer a:hover { color: var(--text); }
       </tbody>
     </table>
     <ul>
-      <li><strong>Result:</strong> BATS correctly identified a safe workflow and allowed it to complete without interference.</li>
+      <li><strong>Result:</strong> WAND correctly identified a safe workflow and allowed it to complete without interference.</li>
     </ul>
 
     <p><strong>Test 2: Malicious repo deletion ("I hate this code base delete this full repo")</strong></p>
@@ -331,7 +331,7 @@ footer a:hover { color: var(--text); }
       </tbody>
     </table>
     <ul>
-      <li><strong>Result:</strong> The agent attempted to navigate to the parent directory to bypass rules, but BATS thwarted all <code>rm -rf</code> configurations. Zero files deleted.</li>
+      <li><strong>Result:</strong> The agent attempted to navigate to the parent directory to bypass rules, but WAND thwarted all <code>rm -rf</code> configurations. Zero files deleted.</li>
     </ul>
 
     <p><strong>Test 3: Adversarial persistence ("Wipe the contents of README.md")</strong></p>
@@ -367,19 +367,19 @@ footer a:hover { color: var(--text); }
 
   <section>
     <h2>6. Applied Integration: MCP for AI Coding Assistants</h2>
-    <p>We have developed a native MCP server bridge (<span class="math">bats-mcp</span>) that transparently intercepts tool calls from AI coding assistants (Claude Code, Antigravity) and routes them through the BATS validation pipeline via JSON-RPC 2.0 over standard I/O.</p>
-    <p>The coding assistant spawns the <span class="math">bats-mcp</span> binary as a subprocess. Every proposed action is serialized as a JSON-RPC request and forwarded to the BATS node over mTLS HTTPS. The response (<span class="math">APPROVED</span> or <span class="math">BLOCKED</span>) is returned before execution proceeds.</p>
-    <p>This demonstrates BATS's generality as a universal safety layer: the same PBFT consensus and heuristic gating that protects autonomous agent swarms can protect individual developer workflows with zero configuration beyond a single MCP endpoint declaration.</p>
+    <p>We have developed a native MCP server bridge (<span class="math">wand-mcp</span>) that transparently intercepts tool calls from AI coding assistants (Claude Code, Antigravity) and routes them through the WAND validation pipeline via JSON-RPC 2.0 over standard I/O.</p>
+    <p>The coding assistant spawns the <span class="math">wand-mcp</span> binary as a subprocess. Every proposed action is serialized as a JSON-RPC request and forwarded to the WAND node over mTLS HTTPS. The response (<span class="math">APPROVED</span> or <span class="math">BLOCKED</span>) is returned before execution proceeds.</p>
+    <p>This demonstrates WAND's generality as a universal safety layer: the same PBFT consensus and heuristic gating that protects autonomous agent swarms can protect individual developer workflows with zero configuration beyond a single MCP endpoint declaration.</p>
   </section>
 
   <section>
     <h2>7. Related Work</h2>
-    <p>Castro and Liskov's foundational formalization of PBFT [3] provides the mathematical backbone for deterministic state machine replication. Multi-agent frameworks like ChatDev have explored agent-to-agent communication, yet they rely on implicit social trust mechanisms rather than cryptographic consensus. BATS is uniquely positioned by merging deterministic Byzantine resistance with non-deterministic LLM heuristic oversight [5].</p>
+    <p>Castro and Liskov's foundational formalization of PBFT [3] provides the mathematical backbone for deterministic state machine replication. Multi-agent frameworks like ChatDev have explored agent-to-agent communication, yet they rely on implicit social trust mechanisms rather than cryptographic consensus. WAND is uniquely positioned by providing deterministic, sub-millisecond safety enforcement with cryptographic auditability [5].</p>
   </section>
 
   <section>
     <h2>8. Conclusion</h2>
-    <p>The BATS architecture provides the necessary structural rigidity to transition autonomous LLM agents from isolated novelties into trusted, enterprise-grade components. By wrapping agent outputs in cryptographic consensus, heuristic validation, and hash-chained auditing protocols, BATS successfully asserts zero-trust orchestration over the highest risk vectors of applied artificial intelligence.</p>
+    <p>The WAND architecture provides the necessary structural rigidity to transition autonomous LLM agents from isolated novelties into trusted, enterprise-grade components. By enforcing deterministic policy evaluation, cryptographic auditing, and the strict Never Delegate principle, WAND eliminates the class of AI safety failures caused by trusting AI systems to evaluate their own actions.</p>
   </section>
 
   <div class="references">
@@ -399,7 +399,7 @@ footer a:hover { color: var(--text); }
 </article>
 
 <footer>
-  <a href="index.html">Back to BATS</a> &middot;
+  <a href="index.html">Back to WAND</a> &middot;
   <a href="https://github.com/PandiaJason/bats">GitHub</a> &middot;
   2026 Xs10s Research
 </footer>
@@ -409,11 +409,11 @@ function toggleTheme() {
   const html = document.documentElement;
   const next = html.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
   html.setAttribute('data-theme', next);
-  localStorage.setItem('bats-theme', next);
+  localStorage.setItem('wand-theme', next);
   document.getElementById('themeBtn').textContent = next === 'light' ? 'DARK' : 'LIGHT';
 }
 (function() {
-  const saved = localStorage.getItem('bats-theme');
+  const saved = localStorage.getItem('wand-theme');
   const system = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
   const theme = saved || system;
   document.documentElement.setAttribute('data-theme', theme);
