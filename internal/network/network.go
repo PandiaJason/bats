@@ -69,14 +69,14 @@ func (c *Client) GetHTTPClient() *http.Client {
 	return c.h2Client
 }
 
-// Send delivers a single consensus message to a peer. Returns error on failure.
+// Send delivers a single message to a peer. Returns error on failure.
 func (c *Client) Send(addr string, msg *types.ConsensusMessage) error {
 	data, err := proto.Marshal(msg)
 	if err != nil {
 		return err
 	}
 
-	resp, err := c.h2Client.Post("https://"+addr+"/consensus", "application/x-protobuf", bytes.NewBuffer(data))
+	resp, err := c.h2Client.Post("https://"+addr+"/validate", "application/x-protobuf", bytes.NewBuffer(data))
 	if err != nil {
 		return err
 	}
@@ -84,7 +84,7 @@ func (c *Client) Send(addr string, msg *types.ConsensusMessage) error {
 	return nil
 }
 
-// Broadcast sends a consensus message to all peers in parallel using goroutine
+// Broadcast sends a message to all peers in parallel using goroutine
 // fan-out. Each peer gets a single attempt with the configured hop timeout.
 // A WaitGroup ensures all sends are dispatched before returning.
 func (c *Client) Broadcast(peers []string, msg *types.ConsensusMessage) {

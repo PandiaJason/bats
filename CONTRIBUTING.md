@@ -2,7 +2,7 @@
 
 ## 🎖️ Engineering Philosophy
 
-We follow a **deterministic safety** approach. A single bug in the consensus logic can compromise the safety of the entire agent swarm. Therefore, we do not "vibe-code." Every change must be backed by:
+We follow a **deterministic safety approach. A single bug in the policy engine can compromise the safety of the entire agent swarm. Therefore, we do not "vibe-code." Every change must be backed by:
 integrity of the protocol, all contributions must adhere to the following rigorous standards.
 
 ---
@@ -10,7 +10,7 @@ integrity of the protocol, all contributions must adhere to the following rigoro
 ## 🛡️ Engineering Standards
 
 ### 1. Deterministic Execution
-All consensus-related logic must be strictly deterministic. 
+All policy-engine logic must be strictly deterministic. 
 - **Prohibited**: Raw map iterations, unseeded random number generation, or state transitions dependent on local system time.
 - **Requirement**: No Pull Request will be merged without passing the **Xs10s Adversarial Gauntlet**, which tests for drift under simulated network partitions and message reordering.
 
@@ -21,7 +21,7 @@ To mitigate payload mutation vulnerabilities, WAND enforces strict memory hygien
 - **Serialization**: Only Protocol Buffers (v3) are permitted for over-the-wire data to ensure deterministic binary representation.
 
 ### 3. Formal Verification
-Any logic affecting the **Verifiable Agreement Layer (VAL)** or the PBFT state machine must be accompanied by a **Proof of Safety**.
+Any logic affecting the **policy engine or WAL must be accompanied by a **Proof of Safety**.
 - Contributors must document the mathematical invariant that their change preserves (e.g., $Quorum \cap Quorum \neq \emptyset$).
 - Changes to the 3-phase commit protocol require a formal trace analysis showing that safety holds even during a View Change.
 

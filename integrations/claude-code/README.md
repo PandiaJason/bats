@@ -2,7 +2,7 @@
 
 A Model Context Protocol (MCP) server that gives Claude Code, Antigravity, or any MCP-compatible AI assistant access to WAND safety validation.
 
-Every proposed action is routed through your WAND node's heuristic safety gate and Byzantine consensus layer before execution.
+Every proposed action is routed through your WAND node's deterministic policy engine before execution.
 
 ## Quick Setup
 
@@ -91,7 +91,7 @@ Action: "SELECT * FROM users WHERE id = 5"
   APPROVED (fast-path, confidence: 0.98)
 
 Action: "UPDATE users SET role = 'admin'"
-  APPROVED (PBFT consensus, confidence: 0.72)
+  ALLOW (deterministic policy engine)
 ```
 
 ### `check_health`
@@ -119,7 +119,7 @@ Claude Code / Antigravity
   +--------------------+
   |  WAND Node         |
   |  :8001             |
-  |  AI Gate + PBFT    |
+  |  Policy Engine    |
   +--------------------+
 ```
 

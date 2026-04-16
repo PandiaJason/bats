@@ -74,13 +74,13 @@ func runAIConsensus(config Config) {
 }
 
 func mockLLMDecision(config Config) {
-	content := "Byzantine resilient consensus for agents."
+	content := "Deterministic safety enforcement for agents."
 	fmt.Printf("Mock AI Result: %s\n", content)
 	submitToCluster(config.Node, content)
 }
 
 func submitToCluster(node string, content string) {
-	fmt.Printf("Submitting AI Result to node %s for consensus...\n", node)
+	fmt.Printf("Submitting AI Result to node %s for validation...\n", node)
 
 	url := "http://" + node + "/start"
 	http.Post(url, "text/plain", bytes.NewBuffer([]byte(content)))

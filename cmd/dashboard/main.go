@@ -31,7 +31,7 @@ type NodeHealth struct {
 
 type DashboardState struct {
 	Nodes          map[string]*NodeHealth `json:"nodes"`
-	ConsensusLog   []string              `json:"consensus_log"`
+	ValidationLog   []string              `json:"validation_log"`
 	BlockedCounter map[string]int        `json:"blocked_counter"`
 	WALEntries     []string              `json:"wal_entries"`
 	Uptime         string                `json:"uptime"`
@@ -182,7 +182,7 @@ func handleProxyValidate(w http.ResponseWriter, r *http.Request) {
 	json.NewDecoder(resp.Body).Decode(&result)
 
 	stateMu.Lock()
-	// Track consensus events
+	// Track validation events
 	approved, _ := result["approved"].(bool)
 	fastPath, _ := result["fast_path"].(bool)
 	var action struct{ Action string `json:"action"` }
@@ -209,9 +209,9 @@ func handleProxyValidate(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	state.ConsensusLog = append(state.ConsensusLog, entry)
-	if len(state.ConsensusLog) > 50 {
-		state.ConsensusLog = state.ConsensusLog[len(state.ConsensusLog)-50:]
+	state.ValidationLog = append(state.ValidationLog, entry)
+	if len(state.ValidationLog) > 50 {
+		state.ValidationLog = state.ValidationLog[len(state.ValidationLog)-50:]
 	}
 	stateMu.Unlock()
 
@@ -362,7 +362,7 @@ function poll(){
     // Log
     const lg=document.getElementById('log');
     lg.innerHTML='';
-    (d.consensus_log||[]).slice().reverse().forEach(e=>{
+    (d.validation_log||[]).slice().reverse().forEach(e=>{
       const div=document.createElement('div');
       let cls='entry';
       if(e.includes('FAST_PATH'))cls+=' fast';

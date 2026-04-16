@@ -13,8 +13,8 @@ func main() {
 		fmt.Println("Commands:")
 		fmt.Println("  start     - Start the cluster via Docker Compose")
 		fmt.Println("  stop      - Stop the cluster")
-		fmt.Println("  trigger   - Trigger consensus on node1")
-		fmt.Println("  ai        - Run AI Agent consensus test")
+		fmt.Println("  trigger   - Trigger validation on node1")
+		fmt.Println("  ai        - Run AI Agent validation test")
 		fmt.Println("  audit     - Run audit tool on node1 WAL")
 		return
 	}

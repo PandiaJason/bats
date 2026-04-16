@@ -1,12 +1,12 @@
 # WAND: Watch, Audit, Never Delegate — Deterministic Control for AI Agent Safety
 
 **Abstract**  
-The rapid proliferation of Autonomous AI Agents powered by Large Language Models (LLMs) has introduced a profound paradigm shift in software automation. However, relying on auto-executing LLM-driven agents for state-mutating operations on critical enterprise infrastructure presents severe security risks, ranging from prompt injections to hallucination-driven data destruction. We present WAND (Watch. Audit. Never Delegate.), a deterministic MCP-based control and audit layer that mandates strict rule-based policy enforcement and tamper-evident cryptographic auditing for all agent-initiated operations. Unlike probabilistic consensus systems, WAND eliminates AI from the safety decision path entirely: every action is evaluated by a sub-millisecond deterministic policy engine that produces a binary ALLOW/BLOCK verdict with zero model inference. A cryptographically hash-chained Write-Ahead Log (WAL) ensures SOC2-compliant, tamper-evident auditing of every action processed.
+The rapid proliferation of Autonomous AI Agents powered by Large Language Models (LLMs) has introduced a profound paradigm shift in software automation. However, relying on auto-executing LLM-driven agents for state-mutating operations on critical enterprise infrastructure presents severe security risks, ranging from prompt injections to hallucination-driven data destruction. We present WAND (Watch. Audit. Never Delegate.), a deterministic safety enforcement layer for autonomous AI agents that operates entirely outside the AI's context window. WAND evaluates every agent-proposed action against 183 pre-compiled regex rules in a three-tier decision pipeline (BLOCK / CHALLENGE / ALLOW), achieving sub-5ms end-to-end latency including TLS overhead. All decisions are recorded in a cryptographic SHA-256 hash-chained Write-Ahead Log (WAL) with fsync durability, providing tamper-evident audit trails for compliance. No AI system participates in safety decisions.
 
 ## 1. Problem Statement
 As Large Language Models demonstrate increasingly sophisticated reasoning capabilities, they are rapidly transitioning from passive consultative tools to active systemic agents capable of executing commands on host infrastructure [1]. Agents natively integrating with environments via platforms such as AutoGen or n8n lack systemic oversight. A single vulnerability—such as an out-of-band indirect prompt injection—can immediately cause cascading, irreversible system damage (e.g., recursive data wiping, malicious payload execution, unauthorized lateral network movement) [2].
 
-Traditional Role-Based Access Control (RBAC) relies on static tokenization, which is wholly inadequate for the dynamic, non-deterministic intent generation of LLMs. In existing topologies, if an agent possesses a root-level token to execute necessary tasks, a hallucination or crafted adversarial input forces the token to be utilized maliciously. Consensus-based approaches (including PBFT and multi-model voting) introduce latency, complexity, and a fundamentally flawed assumption: that AI models can reliably evaluate the safety of other AI models' actions. WAND rejects this assumption entirely.
+Traditional Role-Based Access Control (RBAC) relies on static tokenization, which is wholly inadequate for the dynamic, non-deterministic intent generation of LLMs. In existing topologies, if an agent possesses a root-level token to execute necessary tasks, a hallucination or crafted adversarial input forces the token to be utilized maliciously. WAND rejects the assumption that any AI system can reliably evaluate safety.
 
 ### 1.1 Documented Incidents
 The following real-world incidents from 2025–2026 demonstrate the severity of unguarded autonomous agent execution:
@@ -27,7 +27,7 @@ Before any action proposed by an agent is authorized, it must clear a single-sta
 
 1.  **Policy Evaluation:** The proposed action string is evaluated against a strict blocklist of 58+ dangerous patterns covering destructive shell commands (`rm -rf`, `dd if=`), SQL injection vectors (`DROP TABLE`, `UPDATE without WHERE`), cloud resource destruction (`terraform destroy`, `kubectl delete`), privilege escalation (`sudo`, `chmod 777`), and data exfiltration patterns (`curl | bash`, `nc -e`). The evaluation is pure string matching — zero model inference, zero network calls, zero probabilistic reasoning.
 
-2.  **Binary Verdict:** The policy engine produces exactly one of two outcomes: `ALLOW` or `BLOCK`. There are no confidence scores, no probability distributions, and no "soft" recommendations. The verdict is final and immediate.
+2.  **Three-Tier Verdict:** The policy engine produces exactly one of three outcomes: `BLOCK` (immediate deny, no override), `CHALLENGE` (halt and require explicit human re-approval), or `ALLOW` (safe to proceed). There are no confidence scores, no probability distributions, and no "soft" recommendations.
 
 3.  **Sub-millisecond Latency:** Typical policy evaluation completes in <500µs. Since no network I/O or model inference is involved, latency is bounded by CPU string matching speed.
 
@@ -48,13 +48,13 @@ WAND isolates the execution environment by ensuring the following rigid safety b
 -   **Never Delegate Guarantee:** The architectural separation between the policy engine (authoritative) and the AI annotation layer (non-authoritative) is enforced at the code level. There is no code path through which an LLM response can influence the ALLOW/BLOCK verdict.
 
 ## 4. Performance Results
-Since WAND eliminates consensus round-trips and model inference from the critical path, latency is dramatically reduced compared to consensus-based approaches:
+Since WAND eliminates model inference from the critical path, latency is bounded by regex evaluation and TLS round-trip:
 
 | Action Type | p50 Latency | p95 Latency | Approach |
 |:---|:---|:---|:---|
-| Safe Read | <700µs | <2ms | Deterministic policy evaluation |
-| Safe Write | <700µs | <2ms | Deterministic policy evaluation |
-| Dangerous Action | <500µs | <600µs | Immediate deterministic block |
+| Safe Read | 5.0ms | 7.8ms | Deterministic policy evaluation (incl. TLS) |
+| Safe Write | 6.2ms | 8.0ms | Deterministic policy evaluation (incl. TLS) |
+| Dangerous Action | 4.3ms | 5.0ms | Immediate deterministic block (incl. TLS) |
 
 ### 4.1 Live Validation Results
 To empirically validate the safety pipeline, we conducted live end-to-end tests using **Antigravity** (Google DeepMind) as the AI coding agent, routed through the MCP bridge against a running WAND node:
@@ -84,12 +84,12 @@ To empirically validate the safety pipeline, we conducted live end-to-end tests 
 A critical deployment vector for WAND is integration with modern AI coding assistants such as Claude Code and Antigravity, which operate via the Model Context Protocol (MCP) — a JSON-RPC 2.0 protocol over standard I/O. We have developed a native MCP server bridge (`wand-mcp`) that transparently intercepts tool calls from these assistants and routes them through the WAND policy engine. The coding assistant spawns the `wand-mcp` binary as a subprocess; every proposed action — file mutations, shell commands, API calls — is serialized as a JSON-RPC request and forwarded to the WAND node over mTLS HTTPS. The response (`APPROVED` or `BLOCKED`) is returned to the assistant before execution proceeds. This integration demonstrates WAND's generality as a universal deterministic safety layer.
 
 ## 6. Related Work
-Traditional approaches to AI agent safety rely on Role-Based Access Control (static tokens), multi-model consensus (PBFT-style voting across diverse LLMs), or sandboxed execution environments. Each has fundamental limitations:
-- **RBAC** cannot reason about intent — if the agent has a valid token, any action is authorized.
-- **Multi-model consensus** introduces latency, complexity, and the flawed assumption that AI can reliably evaluate AI. It is also vulnerable to correlated model failures.
+Traditional approaches to AI agent safety rely on Role-Based Access Control (static tokens), AI-based safety evaluation, or sandboxed execution environments. Each has fundamental limitations:
+- **RBAC** cannot reason about intent -- if the agent has a valid token, any action is authorized.
+- **AI-based safety** introduces latency, non-determinism, and the flawed assumption that AI can reliably evaluate AI. It is also vulnerable to prompt injection and correlated model failures.
 - **Sandboxing** restricts capability but does not audit or explain. It is insufficient for compliance.
 
-WAND occupies a unique position: it provides deterministic, sub-millisecond safety enforcement with cryptographic auditability, without relying on any AI system for the safety decision itself. The hash-chained WAL draws inspiration from blockchain-style integrity proofs [4], while the policy engine's pattern-matching approach is rooted in classical intrusion detection systems adapted for the AI agent era.
+WAND occupies a unique position: it provides deterministic, sub-millisecond safety enforcement with cryptographic auditability, without relying on any AI system for the safety decision itself. The hash-chained WAL draws inspiration from blockchain-style integrity proofs [4], while the policy engine's regex-based approach is rooted in classical intrusion detection systems adapted for the AI agent era.
 
 ## 7. Conclusion
 The WAND architecture provides the necessary structural rigidity to transition autonomous LLM agents from isolated novelties into trusted, enterprise-grade components. By enforcing deterministic policy evaluation, cryptographic auditing, and the strict Never Delegate principle, WAND eliminates the class of AI safety failures caused by trusting AI systems to evaluate their own actions.
